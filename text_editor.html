@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>双栏文本编辑器</title>
+
+	<!-- CSS样式部分 -->
+	<style>
+		/* 全局变量 */
+		:root {
+			/* 颜色 */
+			--bg-color: #f5f5f5;
+			--toolbar-color: #e0e0e0;
+			--border-color: #bdbdbd;
+			--text-color: #333;
+			--highlight-color: #90caf9;
+
+			/* 间距 */
+			--base-padding: 8px;
+			--small-padding: 4px;
+
+			/* 阴影 */
+			--base-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			--hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+			--active-shadow: 0 4px 8px rgba(144, 202, 249, 0.3);
+		}
+
+		/* 基础样式 */
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			margin: 0;
+			padding: 0;
+			background-color: var(--bg-color);
+			color: var(--text-color);
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+		}
+
+		/* 工具栏样式 - 顶部操作按钮区域 */
+		.toolbar {
+			background-color: var(--toolbar-color);
+			padding: var(--base-padding);
+			border-bottom: 1px solid var(--border-color);
+			display: flex;
+			flex-direction: column;
+			gap: var(--base-padding);
+		}
+
+		.toolbar-row {
+			display: flex;
+			justify-content: space-between;
+		}
+
+		.tool-group {
+			display: flex;
+			gap: var(--base-padding);
+		}
+
+		button {
+			padding: 6px 12px;
+			background-color: white;
+			border: 1px solid var(--border-color);
+			border-radius: var(--small-padding);
+			cursor: pointer;
+			transition: all 0.2s ease;
+			min-width: 24px;
+			text-align: center;
+		}
+
+		button:hover {
+			background-color: #eee;
+			box-shadow: var(--base-shadow);
+		}
+
+		button:active {
+			transform: translateY(0);
+			box-shadow: none;
+		}
+
+		/* 格式化按钮特殊样式 */
+		#bold-btn,
+		#italic-btn,
+		#underline-btn,
+		#strike-btn {
+			font-weight: bold;
+			font-family: 'Times New Roman', serif;
+		}
+
+		/* 搜索按钮特殊样式 */
+		#search-btn {
+			background-color: #f0f8ff;
+			border-color: #90caf9;
+			position: relative;
+			padding-left: 24px;
+		}
+
+		#search-btn::before {
+			content: "🔍";
+			position: absolute;
+			left: var(--base-padding);
+			top: 50%;
+			transform: translateY(-50%);
+			font-size: 14px;
+		}
+
+		#search-btn:hover {
+			background-color: #e3f2fd;
+			border-color: #64b5f6;
+		}
+
+		#bold-btn {
+			font-weight: 900;
+		}
+
+		#italic-btn {
+			font-style: italic;
+		}
+
+		#underline-btn {
+			text-decoration: underline;
+		}
+
+		#strike-btn {
+			text-decoration: line-through;
+		}
+
+		#link-btn,
+		#image-btn,
+		#code-btn {
+			font-size: 14px;
+			padding: 6px var(--base-padding);
+		}
+
+		.editor-container {
+			display: flex;
+			flex: 1;
+			overflow: hidden;
+		}
+
+		.title-panel,
+		.content-panel {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			padding: var(--base-padding);
+			overflow: hidden;
+		}
+
+		.title-panel {
+			border-right: 1px solid var(--border-color);
+			max-width: 300px;
+		}
+
+		.panel-header {
+			font-weight: bold;
+			margin-bottom: var(--base-padding);
+		}
+
+		/* 编辑器样式 */
+		.editor {
+			flex: 1;
+			border: 1px solid var(--border-color);
+			background-color: white;
+			padding: var(--base-padding);
+			overflow-y: scroll;
+			outline: none;
+			scrollbar-width: thin;
+			scrollbar-color: #c1c1c1 #f1f1f1;
+		}
+
+		/* 滚动条样式 */
+		.editor::-webkit-scrollbar {
+			width: 18px;
+			height: 18px;
+			display: block;
+		}
+
+		.editor::-webkit-scrollbar-track {
+			background: #f1f1f1;
+			border-radius: 9px;
+			box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+		}
+
+		.editor::-webkit-scrollbar-thumb {
+			background-color: #c1c1c1;
+			border-radius: 9px;
+			border: 3px solid #f1f1f1;
+		}
+
+		.editor::-webkit-scrollbar-thumb:hover {
+			background-color: #a8a8a8;
+		}
+
+		/* 确保内容足够触发滚动条 */
+		#title-list {
+			min-height: 200px;
+			/* 设置最小高度确保有足够空间显示滚动条 */
+		}
+
+		#content-editor {
+			min-height: 300px;
+			/* 设置最小高度确保有足够空间显示滚动条 */
+			resize: none;
+			/* 禁止通过鼠标调整大小 */
+		}
+
+		/* 状态栏样式 */
+		.status-bar {
+			height: auto;
+			min-height: 24px;
+			font-size: 12px;
+			padding: var(--small-padding) var(--base-padding);
+			background-color: var(--toolbar-color);
+			border-top: 1px solid var(--border-color);
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			overflow-x: auto;
+			white-space: nowrap;
+		}
+
+		.status-item {
+			margin-right: var(--base-padding);
+			display: inline-flex;
+			align-items: center;
+		}
+
+		.status-saved {
+			margin-left: var(--base-padding);
+			color: #4CAF50;
+			transition: all 0.3s ease;
+			opacity: 1;
+		}
+
+		.status-messages {
+			flex: 1;
+			display: flex;
+			flex-wrap: wrap;
+			margin-right: 10px;
+			overflow: hidden;
+		}
+
+		.status-message {
+			background-color: rgba(144, 202, 249, 0.2);
+			border-radius: var(--small-padding);
+			padding: 2px 6px;
+			margin-right: 5px;
+			margin-bottom: 3px;
+			white-space: nowrap;
+		}
+
+		.status-stats {
+			flex-shrink: 0;
+			text-align: right;
+		}
+
+		/* 响应式设计 */
+		@media (max-width: 768px) {
+			.status-bar {
+				font-size: 11px;
+			}
+
+			.status-item {
+				margin-right: var(--small-padding);
+			}
+		}
+
+		/* 标题项样式 */
+		.title-item {
+			padding: 12px;
+			margin-bottom: var(--base-padding);
+			cursor: pointer;
+			border-radius: var(--base-padding);
+			background-color: white;
+			box-shadow: 0 2px var(--small-padding) rgba(0, 0, 0, 0.1);
+			transition: all 0.2s ease;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.title-item:hover {
+			background-color: #f5f5f5;
+			box-shadow: 0 var(--small-padding) var(--base-padding) rgba(0, 0, 0, 0.15);
+		}
+
+		.title-item.active {
+			background-color: var(--highlight-color);
+			box-shadow: 0 var(--small-padding) var(--base-padding) rgba(144, 202, 249, 0.3);
+			border-left: var(--small-padding) solid #1976d2;
+		}
+
+		.title-item {
+
+			font-weight: 500;
+		}
+
+		/* 移除编辑按钮相关样式 */
+		input[type="file"] {
+			display: none;
+		}
+
+		/* 搜索和替换对话框样式 */
+		.search-dialog {
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 400px;
+			max-height: 80vh;
+			background-color: var(--bg-color);
+			color: var(--text-color);
+			border: 1px solid var(--border-color);
+			border-radius: var(--base-padding);
+			box-shadow: 0 var(--small-padding) 12px rgba(0, 0, 0, 0.15);
+			padding: 20px;
+			z-index: 1000;
+			display: none;
+			overflow-y: auto;
+		}
+
+		.search-dialog .dialog-header {
+			padding: var(--base-padding) 16px;
+			margin: -20px -20px 10px -20px;
+			background: var(--toolbar-color);
+			border-radius: var(--base-padding) var(--base-padding) 0 0;
+			cursor: move;
+			user-select: none;
+		}
+
+		.search-dialog.active {
+			display: block;
+		}
+
+		.search-dialog .close-button {
+			position: absolute;
+			right: 12px;
+			top: 16px;
+			font-size: 20px;
+			color: #aaa;
+			cursor: pointer;
+			transform: scale(0.8) translateX(2px);
+			transition: 0.2s ease;
+		}
+
+		.search-dialog .search-header {
+			margin-top: 0;
+			margin-bottom: 12px;
+			font-size: 16px;
+			font-weight: bold;
+			color: var(--text-color);
+			border-bottom: 1px solid var(--border-color);
+			padding-bottom: var(--base-padding);
+		}
+
+		.search-dialog .search-content {
+			padding: var(--base-padding) 0;
+		}
+
+		.search-dialog .form-group {
+			margin-bottom: 12px;
+		}
+
+		.search-dialog label {
+			display: block;
+			margin-bottom: var(--small-padding);
+			font-size: 14px;
+		}
+
+		.search-dialog input[type="text"] {
+			width: 96%;
+			padding: 6px var(--base-padding);
+			border: 1px solid var(--border-color);
+			border-radius: var(--small-padding);
+			font-size: 14px;
+		}
+
+		.search-dialog .options {
+			display: flex;
+			margin-bottom: 12px;
+		}
+
+		.search-dialog .option {
+			margin-right: 12px;
+			font-size: 14px;
+		}
+
+		.search-dialog .buttons {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 5px;
+			justify-content: space-between;
+		}
+
+		.search-dialog .buttons button,
+		.search-dialog .scope-btn {
+			padding: var(--small-padding) var(--base-padding);
+			font-size: 12px;
+			border: 1px solid var(--border-color);
+			border-radius: var(--base-radius);
+			background-color: white;
+			cursor: pointer;
+			transition: var(--base-transition);
+		}
+
+		.search-dialog .scope-btn.active {
+			background-color: var(--highlight-color);
+			border-color: var(--highlight-color);
+			color: white;
+		}
+
+		.search-dialog .result-info {
+			font-size: 12px;
+			margin-top: var(--base-padding);
+			color: #666;
+		}
+
+		/* 搜索高亮样式 */
+		.highlight-container {
+			position: absolute;
+			pointer-events: none;
+			z-index: 5;
+			overflow: hidden;
+		}
+
+		/* 普通匹配项 */
+		.highlight-overlay {
+			background-color: yellow;
+
+		}
+
+		/* 当前选中匹配项 */
+		.highlight-current {
+			background-color: orange;
+
+		}
+	</style>
+</head>
+
+<body>
+	<div class="toolbar">
+		<div class="toolbar-row">
+			<!-- 工具栏元素-->
+			<div class="tool-group">
+				<button id="new-btn">新建</button>
+				<button id="open-btn">打开</button>
+				<input type="file" id="file-input" accept=".txt" style="display:none">
+				<button id="save-btn">保存</button>
+				<button id="close-btn">关闭</button>
+			</div>
+		</div>
+		<div class="toolbar-row">
+			<!-- 标题栏元素 -->
+			<div class="tool-group">
+				<button id="add-title-btn">增加</button>
+				<button id="remove-title-btn">移除</button>
+				<button id="edit-title-btn">编辑</button>
+				<button id="move-up-btn">上移</button>
+				<button id="move-down-btn">下移</button>
+			</div>
+			<!-- 内容栏元素 -->
+			<div class="content-tools">
+				<button id="font-size-btn">字号</button>
+				<button id="line-height-btn">行距</button>
+				<button id="letter-spacing-btn">列距</button>
+				<button id="search-btn">搜索</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- 主内容区 -->
+	<div class="editor-container">
+		<!-- 标题栏 -->
+		<div class="title-panel">
+			<div class="panel-header">标题</div>
+			<div id="title-list" class="editor" contenteditable="false"></div>
+		</div>
+		<!-- 内容栏 -->
+		<div class="content-panel">
+			<div class="panel-header">内容</div>
+			<textarea id="content-editor" class="editor"></textarea>
+			<div class="status-bar">
+				<div class="status-messages" id="status-messages"></div>
+				<div class="status-stats" id="status-info">行: 0 | 字数: 0 | 总字数: 0</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 搜索和替换对话框 -->
+	<div id="search-dialog" class="search-dialog">
+		<div class="dialog-header">搜索和替换</div>
+		<div class="search-header">搜索选项</div>
+		<div class="search-content">
+			<div class="form-group">
+				<label for="search-input">查找内容:</label>
+				<input type="text" id="search-input" placeholder="输入要查找的文本">
+			</div>
+			<div class="form-group">
+				<label for="replace-input">替换为:</label>
+				<input type="text" id="replace-input" placeholder="输入要替换的文本">
+			</div>
+			<div class="options">
+				<div class="option">
+					<input type="checkbox" id="case-sensitive">
+					<label for="case-sensitive">区分大小写</label>
+				</div>
+				<div class="option">
+					<input type="checkbox" id="whole-word">
+					<label for="whole-word">全字匹配</label>
+				</div>
+				<div class="option">
+					<button id="search-current" class="scope-btn " data-scope="current">当前视图</button>
+				</div>
+				<div class="option">
+					<button id="search-all" class="scope-btn active" data-scope="all">整个文档</button>
+				</div>
+			</div>
+			<div class="buttons">
+				<button id="find-btn">查找</button>
+				<button id="find-prev-btn">上一个</button>
+				<button id="find-next-btn">下一个</button>
+				<button id="replace-btn">替换</button>
+				<button id="replace-all-btn">全部替换</button>
+				<button id="close-search-btn">关闭</button>
+			</div>
+			<div class="result-info" id="search-result-info"></div>
+		</div>
+	</div>
+
+	<!-- JavaScript功能实现 -->
+	<script>
+		// 全局变量：存储所有文档
+		window.documents = [];
+
+		// 全局变量：当前激活的标题索引
+		window.activeTitleIndex = -1;
+
+		// 全局变量：标记文档是否被修改
+		window.isModified = false;
+		// 全局历史记录系统
+		window.editorHistory = {
+			records: [""],
+			index: 0,
+			MAX: 100,
+
+			// 添加历史记录方法
+			add: function (content) {
+				if (this.index < this.records.length - 1) {
+					this.records = this.records.slice(0, this.index + 1);
+				}
+				this.records.push(content);
+				this.index = this.records.length - 1;
+
+				// 限制历史记录数量
+				if (this.records.length > this.MAX) {
+					this.records.shift();
+					this.index--;
+				}
+			}
+		};
+
+		// 弹窗拖拽功能
+		function setupDialogDrag(dialog) {
+			const header = dialog.querySelector('.dialog-header');
+			if (!header) return;
+
+			let isDragging = false;
+			let offsetX, offsetY;
+
+			header.addEventListener('mousedown', (e) => {
+				isDragging = true;
+				offsetX = e.clientX - dialog.getBoundingClientRect().left;
+				offsetY = e.clientY - dialog.getBoundingClientRect().top;
+				dialog.style.cursor = 'grabbing';
+				e.preventDefault();
+			});
+
+			document.addEventListener('mousemove', (e) => {
+				if (!isDragging) return;
+
+				let left = e.clientX - offsetX;
+				let top = e.clientY - offsetY;
+
+				// 限制不超出视口
+				const maxLeft = window.innerWidth - dialog.offsetWidth;
+				const maxTop = window.innerHeight - dialog.offsetHeight;
+
+				left = Math.max(0, Math.min(left, maxLeft));
+				top = Math.max(0, Math.min(top, maxTop));
+
+				dialog.style.left = left + 'px';
+				dialog.style.top = top + 'px';
+				dialog.style.transform = 'none';
+			});
+
+			document.addEventListener('mouseup', () => {
+				isDragging = false;
+				dialog.style.cursor = '';
+			});
+		}
+
+		// 防抖函数
+		function debounce(func, wait) {
+			let timeout;
+			return function () {
+				clearTimeout(timeout);
+				timeout = setTimeout(func, wait);
+			};
+		}
+
+		// 防抖版本的状态更新（最先定义）
+		// 添加状态消息
+		function addStatusMessage(message) {
+			const MESSAGE_TIMEOUT = 5000; // 消息显示时间（毫秒）
+			const statusMessages = document.getElementById('status-messages');
+			if (!statusMessages) {
+				console.warn('状态消息容器未找到，请确保存在 id="status-messages" 的元素');
+				return;
+			}
+
+			const messageElement = document.createElement('span');
+			messageElement.className = 'status-message';
+			messageElement.textContent = message;
+			statusMessages.appendChild(messageElement);
+
+			// 自动移除消息
+			const timeoutId = setTimeout(() => {
+				messageElement.remove();
+			}, MESSAGE_TIMEOUT);
+
+			// 清理定时器
+			messageElement.dataset.timeoutId = timeoutId;
+		}
+
+		const debouncedUpdateStatus = debounce(function () {
+			// 安全访问依赖变量
+			if (typeof activeTitleIndex === 'undefined' || activeTitleIndex === -1) return;
+			if (!window.contentEditor || !window.statusInfo || !documents) return;
+
+			const text = contentEditor.value;
+			const lines = text.split('\n').length;
+			const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+
+			// 计算总字数
+			let totalWords = 0;
+			documents.forEach(doc => {
+				const docText = doc.content.replace(/<[^>]*>/g, '');
+				totalWords += docText.trim() === '' ? 0 : docText.trim().split(/\s+/).length;
+			});
+
+			window.statusInfo.textContent = `标题: ${documents[activeTitleIndex].title} | 行: ${lines} | 字数: ${words} | 总字数: ${totalWords}`;
+		}, 300);
+
+		// 全局updateStatus函数
+		function updateStatus() {
+			// 确保依赖变量已初始化
+			if (typeof debouncedUpdateStatus !== 'undefined') {
+				debouncedUpdateStatus();
+			}
+		}
+
+		// 当DOM完全加载后执行初始化
+		document.addEventListener('DOMContentLoaded', function () {
+			// 获取关键DOM元素引用			
+			window.contentEditor = document.getElementById('content-editor');
+			window.statusInfo = document.getElementById('status-info');
+			const fileInput = document.getElementById('file-input');
+			const titleList = document.getElementById('title-list');
+
+			// 全局状态变量
+			// window.activeTitleIndex = -1; // 当前活动标题索引，-1表示未选择
+			// window.documents = []; // 存储所有文档的标题和内容
+			// window.isModified = false; // 跟踪文档是否被修改
+
+			// 初始化编辑器，设置初始状态
+			initEditor();
+
+			// 顶部工具栏按钮事件绑定
+			document.getElementById('new-btn').addEventListener('click', newDocument);
+			document.getElementById('open-btn').addEventListener('click', () => fileInput.click());
+			document.getElementById('save-btn').addEventListener('click', saveDocument);
+			document.getElementById('close-btn').addEventListener('click', closeDocument);
+			// 移除了不存在的按钮（undo-btn, redo-btn, export-btn）的事件监听器
+
+			document.getElementById('add-title-btn').addEventListener('click', addTitle);
+			document.getElementById('remove-title-btn').addEventListener('click', removeTitle);
+			document.getElementById('move-up-btn').addEventListener('click', moveTitleUp);
+			document.getElementById('move-down-btn').addEventListener('click', moveTitleDown);
+
+			// 添加字体样式按钮事件
+			document.getElementById('font-size-btn').addEventListener('click', changeFontSize);
+			document.getElementById('line-height-btn').addEventListener('click', changeLineHeight);
+			document.getElementById('letter-spacing-btn').addEventListener('click', changeLetterSpacing);
+			document.getElementById('search-btn').addEventListener('click', toggleSearchDialog);
+
+			// 工具栏编辑按钮 - 仅用于编辑标题
+			document.getElementById('edit-title-btn').addEventListener('click', () => {
+				if (activeTitleIndex === -1) {
+					alert('请先选择要编辑的标题');
+					return;
+				}
+				const newTitle = prompt('编辑标题:', documents[activeTitleIndex].title);
+				if (newTitle && newTitle !== documents[activeTitleIndex].title) {
+					documents[activeTitleIndex].title = newTitle;
+					isModified = true;
+					renderTitles();
+					updateStatus();
+				}
+			});
+
+			fileInput.addEventListener('change', handleFileOpen);
+			// 修改这一行，使用防抖版本的updateStatus
+			contentEditor.addEventListener('input', debouncedUpdateStatus);
+
+			// 初始化编辑器状态
+			function initEditor() {
+				// 确保DOM元素已加载
+				if (!window.contentEditor || !window.statusInfo) {
+					console.error('contentEditor 或 statusInfo 未正确初始化');
+					return;
+				}
+
+				// 构建文档文本的函数
+				function buildDocumentText() {
+					let fullText = '';
+					documents.forEach(doc => {
+						fullText += `**${doc.title}**\n\n${doc.content}\n\n`;
+					});
+					return fullText;
+				}
+
+				// 设置自动保存定时器
+				setInterval(() => {
+					if (documents.length > 0 && activeTitleIndex !== -1) {
+						documents[activeTitleIndex].content = window.contentEditor.value;
+						localStorage.setItem('textEditorDocument', buildDocumentText());
+					}
+				}, 30000);
+
+				// 直接使用全局变量
+				// const statusInfo = window.statusInfo; // 如果需要局部引用，可以这样获取
+
+				// 创建默认新文档
+				newDocument();
+				isModified = false;
+
+				// 初始化历史记录
+				if (contentEditor) {
+					window.editorHistory.records = [contentEditor.value];
+				}
+				// window.editorHistory.index = 0;
+			}
+
+			// 新建文档
+			function newDocument() {
+				documents = [{
+					title: '未命名标题',
+					content: ''
+				}];
+				activeTitleIndex = 0;
+				renderTitles();
+				contentEditor.value = '';
+				isModified = false;
+
+				// 更新历史记录
+				addToHistory(contentEditor.value);
+
+				updateStatus();
+			}
+
+			// 处理文件打开操作
+			function handleFileOpen(event) {
+				console.log('文件选择事件触发');
+				try {
+					const file = event.target.files[0];
+					if (!file) {
+						console.log('未选择文件');
+						return;
+					}
+
+					console.log('开始读取文件:', file.name);
+					const reader = new FileReader();
+
+					reader.onload = function (e) {
+						console.log('文件读取成功');
+						try {
+							const text = e.target.result;
+							console.log('解析文档内容');
+							parseDocument(text);
+
+							console.log('更新界面');
+							// 确保渲染前内容已更新
+							if (documents.length > 0 && activeTitleIndex >= 0) {
+								renderTitles();
+								contentEditor.value = documents[activeTitleIndex].content;
+								updateStatus();
+								console.log('界面更新完成');
+
+								// 重置历史记录
+								window.editorHistory.records = [contentEditor.value];
+								window.editorHistory.index = 0;
+
+								// 显示成功提示
+								addStatusMessage(`文件 "${file.name}" 加载成功`);
+							} else {
+								console.error('文档解析失败，未生成有效内容');
+								alert('文档解析失败，请检查文件格式');
+							}
+						} catch (parseError) {
+							console.error('文档处理错误:', parseError);
+							alert('文档处理错误: ' + parseError.message);
+						}
+					};
+
+					reader.onerror = function (error) {
+						console.error('文件读取失败:', error);
+						alert('文件读取失败: ' + error.target.error.message);
+					};
+
+					reader.readAsText(file);
+				} catch (error) {
+					console.error('文件打开异常:', error);
+					alert('文件打开异常: ' + error.message);
+				}
+			}
+
+			// 解析文档内容
+			function parseDocument(text) {
+				documents = [];
+				let currentPos = 0;
+
+				// 使用matchAll一次性找到所有标题
+				const titleMatches = [...text.matchAll(/(\*\*(.+?)\*\*|\*\*\s(.+?)\s\*\*|\[(.+?)\]|【(.+?)】)/g)];
+
+				if (titleMatches.length === 0) {
+					// 如果没有标题，整个文档作为一个未命名标题
+					documents.push({
+						title: "未命名标题",
+						content: text.trim()
+					});
+					activeTitleIndex = 0;
+					return;
+				}
+
+				// 处理第一个标题之前的内容
+				if (titleMatches[0].index > 0) {
+					const initialContent = text.substring(0, titleMatches[0].index).trim();
+					if (initialContent) {
+						documents.push({
+							title: "未命名标题",
+							content: initialContent
+						});
+					}
+				}
+
+				// 处理每个标题及其内容
+				for (let i = 0; i < titleMatches.length; i++) {
+					const match = titleMatches[i];
+					const title = match[2] || match[3] || match[4];
+
+					// 计算当前标题内容的结束位置
+					let contentEnd = text.length;
+					if (i < titleMatches.length - 1) {
+						// 如果不是最后一个标题，内容结束于下一个标题的开始
+						contentEnd = titleMatches[i + 1].index;
+					}
+
+					// 提取当前标题的内容
+					const content = text.substring(match.index + match[0].length, contentEnd).trim();
+
+					// 添加到文档列表
+					documents.push({
+						title: title.trim(),
+						content: content
+					});
+				}
+
+				activeTitleIndex = 0;
+			}
+
+			// 保存文档
+			function saveDocument() {
+				if (activeTitleIndex === -1 || documents.length === 0) return;
+
+				if (isModified) {
+					// 更新当前活动内容
+					documents[activeTitleIndex].content = contentEditor.value;
+					isModified = false;
+
+					// 构建文档内容
+					let fullText = '';
+					documents.forEach(doc => {
+						fullText += `**${doc.title}**\n\n${doc.content}\n\n`;
+					});
+
+					// 创建下载链接
+					const blob = new Blob([fullText], { type: 'text/plain' });
+					const url = URL.createObjectURL(blob);
+					const a = document.createElement('a');
+					a.href = url;
+					a.download = 'document.txt';
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
+					URL.revokeObjectURL(url);
+
+					updateStatus();
+					alert('文档已保存');
+				} else {
+					alert('文档没有修改，无需保存');
+				}
+			}
+
+			// 关闭当前文档
+			function closeDocument() {
+				if (isModified) {
+					if (confirm('文档已修改，确定要关闭吗？所有未保存的更改将丢失。')) {
+						newDocument();
+						isModified = false;
+					}
+				} else {
+					newDocument();
+				}
+			}
+
+			// 监听内容编辑事件
+			contentEditor.addEventListener('input', () => {
+				isModified = true;
+				updateStatus();
+
+				// 添加到历史记录
+				addToHistory(contentEditor.value);
+			});
+
+			// 添加到历史记录
+			function addToHistory(content) {
+				// 添加新状态到历史记录
+				window.editorHistory.add(content);
+
+				// 如果当前不是最新状态，删除当前之后的所有历史
+				if (window.editorHistory.index < window.editorHistory.records.length - 1) {
+					window.editorHistory.records = window.editorHistory.records.slice(0, window.editorHistory.index + 1);
+				}
+			}
+
+			// 撤销操作
+			function undo() {
+				if (window.editorHistory.index > 0) {
+					window.editorHistory.index--;
+					contentEditor.value = window.editorHistory.records[window.editorHistory.index];
+					isModified = true;
+					updateStatus();
+				}
+			}
+
+			// 重做操作
+			function redo() {
+				if (window.editorHistory.index < window.editorHistory.records.length - 1) {
+					window.editorHistory.index++;
+					contentEditor.value = window.editorHistory.records[window.editorHistory.index];
+					isModified = true;
+					updateStatus();
+				}
+			}
+
+			// 添加键盘快捷键支持
+			contentEditor.addEventListener('keydown', function (e) {
+				// 撤销: Ctrl+Z
+				if (e.ctrlKey && e.key === 'z') {
+					e.preventDefault();
+					undo();
+				}
+
+				// 重做: Ctrl+Y
+				if (e.ctrlKey && e.key === 'y') {
+					e.preventDefault();
+					redo();
+				}
+
+				// Tab键支持
+				if (e.key === 'Tab') {
+					e.preventDefault();
+					const start = this.selectionStart;
+					const end = this.selectionEnd;
+
+					// 在光标位置插入Tab
+					this.value = this.value.substring(0, start) + '\t' + this.value.substring(end);
+
+					// 将光标移到插入的Tab之后
+					this.selectionStart = this.selectionEnd = start + 1;
+
+					// 标记为已修改
+					isModified = true;
+					updateStatus();
+				}
+			});
+
+			// 添加全局键盘快捷键
+			document.addEventListener('keydown', function (e) {
+				// 搜索: Ctrl+F
+				if (e.ctrlKey && e.key === 'f') {
+					e.preventDefault();
+					toggleSearchDialog();
+				}
+
+				// 查找下一个: F3
+				if (e.key === 'F3' && !e.shiftKey) {
+					e.preventDefault();
+					findNextMatch();
+				}
+
+				// 查找上一个: Shift+F3
+				if (e.key === 'F3' && e.shiftKey) {
+					e.preventDefault();
+					findPreviousMatch();
+				}
+			});
+
+			// 字体样式按钮事件处理函数
+			function changeFontSize() {
+				const size = prompt('请输入字号大小（例如：14px, 1.2em, 120%）:', '16px');
+				if (size) {
+					contentEditor.style.fontSize = size;
+				}
+			}
+
+			function changeLineHeight() {
+				const height = prompt('请输入行高（例如：1.5, 2.0）:', '1.5');
+				if (height) {
+					contentEditor.style.lineHeight = height;
+				}
+			}
+
+			function changeLetterSpacing() {
+				const spacing = prompt('请输入字间距（例如：1px, 0.1em）:', '0px');
+				if (spacing) {
+					contentEditor.style.letterSpacing = spacing;
+				}
+			}
+
+			// 显示/隐藏搜索对话框
+			// 搜索相关变量
+			let searchDialogEventsInitialized = false;
+			let searchResults = [];
+			let currentResultIndex = -1;
+			let highlightContainer = null;
+			let highlightOverlays = [];
+
+			// 切换搜索对话框显示状态
+			function toggleSearchDialog() {
+				const searchDialog = document.getElementById('search-dialog');
+				if (!searchDialog) {
+					console.error('search-dialog 元素未找到！');
+					return;
+				}
+				searchDialog.classList.toggle('active');
+
+				if (searchDialog.classList.contains('active')) {
+					// 清除之前的搜索内容和结果
+					document.getElementById('search-input').value = '';
+					document.getElementById('replace-input').value = '';
+					document.getElementById('search-result-info').textContent = '';
+					searchResults = [];
+					currentResultIndex = -1;
+					clearHighlights();
+
+					// 聚焦搜索输入框
+					document.getElementById('search-input').focus();
+
+					// 初始化拖拽功能
+					setupDialogDrag(searchDialog);
+
+					// 只在第一次打开时添加事件监听器
+					if (!searchDialogEventsInitialized) {
+						// 添加搜索对话框按钮事件监听器
+						document.getElementById('find-btn').addEventListener('click', findText);
+						document.getElementById('find-prev-btn').addEventListener('click', findPreviousMatch);
+						document.getElementById('find-next-btn').addEventListener('click', findNextMatch);
+						document.getElementById('replace-btn').addEventListener('click', replaceText);
+						document.getElementById('replace-all-btn').addEventListener('click', replaceAllText);
+						document.getElementById('close-search-btn').addEventListener('click', closeSearchDialog);
+
+						// 添加搜索范围按钮事件
+						document.querySelectorAll('.scope-btn').forEach(btn => {
+							btn.addEventListener('click', function () {
+								document.querySelectorAll('.scope-btn').forEach(b => b.classList.remove('active'));
+								this.classList.add('active');
+							});
+						});
+
+						// 添加搜索输入框的回车键事件
+						document.getElementById('search-input').addEventListener('keydown', function (e) {
+							if (e.key === 'Enter') {
+								e.preventDefault();
+								if (e.shiftKey) {
+									findPreviousMatch();
+								} else {
+									findNextMatch();
+								}
+							}
+						});
+
+						// 标记为已初始化
+						searchDialogEventsInitialized = true;
+					}
+				}
+			}
+
+			// 更新搜索结果信息
+			function updateSearchResultInfo(message) {
+				const resultInfo = document.getElementById('search-result-info');
+				resultInfo.textContent = message;
+			}
+
+			// 创建高亮容器
+			function createHighlightContainer() {
+				if (highlightContainer) {
+					clearHighlights();
+				}
+
+				highlightContainer = document.createElement('div');
+				highlightContainer.className = 'highlight-container';
+				highlightContainer.style.width = contentEditor.offsetWidth + 'px';
+				highlightContainer.style.height = contentEditor.offsetHeight + 'px';
+				highlightContainer.style.left = contentEditor.offsetLeft + 'px';
+				highlightContainer.style.top = contentEditor.offsetTop + 'px';
+
+				// 插入到编辑器之前，确保z-index正确
+				contentEditor.parentNode.insertBefore(highlightContainer, contentEditor);
+			}
+
+			// 清除所有高亮
+			function clearHighlights() {
+				if (highlightContainer) {
+					// 移除滚动事件监听器
+					contentEditor.removeEventListener('scroll', updateHighlightPositions);
+
+					// 移除高亮容器
+					highlightContainer.remove();
+					highlightContainer = null;
+				}
+				highlightOverlays = [];
+			}
+
+			// 监听文档内容变更事件
+			contentEditor.addEventListener('input', function () {
+				const searchDialog = document.getElementById('search-dialog');
+				if (searchDialog && searchDialog.classList.contains('active')) {
+					clearHighlights();
+					findText();
+				}
+			});
+
+			// 更新高亮显示
+			function updateHighlights() {
+				// 清除现有高亮
+				clearHighlights();
+
+				if (searchResults.length === 0 || currentResultIndex === -1) return;
+
+				// 检查编辑器是否已加载
+				if (!contentEditor || !contentEditor.value) {
+					console.error('编辑器内容未加载');
+					updateSearchResultInfo('编辑器内容未加载，请稍后再试');
+					return;
+				}
+
+				// 创建新的高亮容器
+				createHighlightContainer();
+
+				// 添加滚动事件监听器
+				contentEditor.addEventListener('scroll', updateHighlightPositions);
+
+				// 立即更新高亮位置
+				updateHighlightPositions();
+
+				// 计算当前文档的全局偏移量
+				let docOffset = 0;
+				if (activeTitleIndex !== -1) {
+					for (let i = 0; i < activeTitleIndex; i++) {
+						docOffset += documents[i].content.length + 1; // +1 for newline
+					}
+				}
+
+				// 计算文本位置
+				const textContent = contentEditor.value;
+				const textareaStyles = window.getComputedStyle(contentEditor);
+				const lineHeight = parseInt(textareaStyles.lineHeight) || parseInt(textareaStyles.fontSize) * 1.2;
+				const paddingLeft = parseInt(textareaStyles.paddingLeft) || 0;
+				const paddingTop = parseInt(textareaStyles.paddingTop) || 0;
+				const fontSize = parseInt(textareaStyles.fontSize);
+				const charWidth = fontSize * 0.6; // 估计字符宽度
+
+				// 获取编辑器的滚动位置
+				const scrollTop = contentEditor.scrollTop;
+
+				// 为每个搜索结果创建高亮
+				for (let i = 0; i < searchResults.length; i++) {
+					const result = searchResults[i];
+
+					// 计算当前文档中的相对位置
+					const relativeStart = result.start - docOffset;
+					const relativeEnd = result.end - docOffset;
+
+					// 确保匹配项在当前文档范围内
+					if (relativeStart >= 0 && relativeEnd <= textContent.length) {
+						try {
+							// 使用更可靠的方式获取文本位置
+							const tempDiv = document.createElement('div');
+							tempDiv.style.position = 'absolute';
+							tempDiv.style.visibility = 'hidden';
+							tempDiv.style.whiteSpace = 'pre-wrap';
+							tempDiv.style.font = textareaStyles.font;
+							tempDiv.style.width = contentEditor.offsetWidth + 'px';
+							tempDiv.textContent = textContent.substring(0, relativeStart);
+							document.body.appendChild(tempDiv);
+
+							const top = tempDiv.offsetHeight;
+							const left = tempDiv.offsetWidth;
+
+							document.body.removeChild(tempDiv);
+
+							// 创建高亮元素
+							const highlight = document.createElement('div');
+							highlight.className = 'highlight-overlay';
+							if (i === currentResultIndex) {
+								highlight.classList.add('highlight-current');
+							}
+
+							highlight.style.left = left + 'px';
+							highlight.style.top = (top - scrollTop) + 'px';
+							highlight.style.width = (relativeEnd - relativeStart) * charWidth + 'px';
+							highlight.style.height = lineHeight + 'px';
+
+							highlightContainer.appendChild(highlight);
+							highlightOverlays.push(highlight);
+						} catch (error) {
+							console.error('搜索高亮错误:', error);
+							updateSearchResultInfo('搜索高亮失败: ' + error.message);
+							continue;
+						}
+					}
+				}
+
+				// 添加滚动事件监听器，以便在滚动时更新高亮位置
+				contentEditor.addEventListener('scroll', updateHighlightPositions);
+			}
+
+			// 更新高亮位置，考虑滚动
+			function updateHighlightPositions() {
+				if (!highlightContainer || highlightOverlays.length === 0) return;
+
+				const scrollTop = contentEditor.scrollTop;
+				const textareaStyles = window.getComputedStyle(contentEditor);
+				const lineHeight = parseInt(textareaStyles.lineHeight) || parseInt(textareaStyles.fontSize) * 1.2;
+				const paddingTop = parseInt(textareaStyles.paddingTop) || 0;
+
+				// 更新高亮容器位置
+				highlightContainer.style.top = contentEditor.offsetTop + 'px';
+
+				// 计算当前文档的全局偏移量
+				let docOffset = 0;
+				if (activeTitleIndex !== -1) {
+					for (let i = 0; i < activeTitleIndex; i++) {
+						docOffset += documents[i].content.length + 1; // +1 for newline
+					}
+				}
+
+				// 更新每个高亮元素的位置
+				for (let i = 0; i < Math.min(searchResults.length, highlightOverlays.length); i++) {
+					const result = searchResults[i];
+					const highlight = highlightOverlays[i];
+
+					// 计算当前文档中的相对位置
+					const relativeStart = result.start - docOffset;
+
+					// 确保匹配项在当前文档范围内
+					if (relativeStart >= 0) {
+						const beforeText = contentEditor.value.substring(0, relativeStart);
+						const lines = beforeText.split('\n');
+						const lineIndex = lines.length - 1;
+
+						// 更新垂直位置，考虑滚动
+						const top = lineIndex * lineHeight + paddingTop - scrollTop;
+						highlight.style.top = top + 'px';
+					}
+				}
+			}
+
+			// 查找文本
+			function escapeRegExp(string) {
+				return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			}
+
+			// 查找文本
+			function findText() {
+				const searchDialog = document.getElementById('search-dialog');
+				if (!searchDialog || !searchDialog.classList.contains('active')) {
+					console.error('❌ 搜索对话框未显示或未激活！');
+					return;
+				}
+
+				const searchInput = document.getElementById('search-input');
+				if (!searchInput) {
+					console.error('❌ search-input 元素未找到！请确保搜索对话框已显示。');
+					return;
+				}
+
+				const searchText = searchInput.value;
+				if (!searchText || /^\s*$/.test(searchText)) {
+					updateSearchResultInfo('请输入要查找的文本');
+					return;
+				}
+
+				const searchScopeBtn = document.querySelector('.scope-btn.active');
+				if (!searchScopeBtn) {
+					updateSearchResultInfo('请选择搜索范围（当前视图/整个文档）。');
+					return;
+				}
+				const searchScope = searchScopeBtn.dataset.scope;
+
+				const caseSensitive = document.getElementById('case-sensitive').checked;
+				const wholeWord = document.getElementById('whole-word').checked;
+
+				searchResults = [];
+				currentResultIndex = -1;
+				clearHighlights();
+
+				let flags = caseSensitive ? 'g' : 'gi';
+				let searchPattern = searchText;
+
+				if (wholeWord) {
+					searchPattern = `\\b${escapeRegExp(searchPattern)}\\b`;
+				} else {
+					searchPattern = escapeRegExp(searchPattern);
+				}
+
+				try {
+					const regex = new RegExp(searchPattern, flags);
+
+					if (searchScope === 'all') {
+						// 搜索整个文档
+						let docOffset = 0;
+						documents.forEach((doc, docIndex) => {
+							const docContent = doc.content;
+							let match;
+							while ((match = regex.exec(docContent)) !== null) {
+								searchResults.push({
+									start: docOffset + match.index,
+									end: docOffset + match.index + match[0].length,
+									text: match[0],
+									docIndex: docIndex
+								});
+							}
+							docOffset += docContent.length + 1; // +1 for newline
+							regex.lastIndex = 0; // 重置正则表达式
+						});
+					} else {
+						// 只搜索当前视图
+						const docContent = contentEditor.value;
+						let match;
+						while ((match = regex.exec(docContent)) !== null) {
+							searchResults.push({
+								start: match.index,
+								end: match.index + match[0].length,
+								text: match[0],
+								docIndex: activeTitleIndex
+							});
+						}
+					}
+
+					if (searchResults.length > 0) {
+						updateSearchResultInfo(`找到 ${searchResults.length} 个匹配项`);
+						currentResultIndex = 0;
+						updateHighlights();
+						findNextMatch();
+					} else {
+						updateSearchResultInfo('未找到匹配项');
+					}
+				} catch (error) {
+					updateSearchResultInfo(`搜索错误: ${error.message}`);
+				}
+
+				addToHistory(contentEditor.value);
+			}
+
+			// 查找下一个匹配项
+
+			function loadDocument(index) {
+				if (index >= 0 && index < documents.length) {
+					// 保存当前文档内容
+					if (activeTitleIndex !== -1) {
+						documents[activeTitleIndex].content = contentEditor.value;
+					}
+
+					// 切换到新文档
+					activeTitleIndex = index;
+					contentEditor.value = documents[index].content;
+
+					// 重置查找状态
+					searchResults = [];
+					currentResultIndex = -1;
+
+					// 更新标题列表高亮
+					renderTitles();
+
+					// 更新搜索结果高亮
+					updateHighlights();
+
+					// 重置历史记录
+					window.editorHistory.records = [contentEditor.value];
+					window.editorHistory.index = 0;
+
+					// 更新状态栏
+					updateStatus();
+				}
+			}
+
+
+			function closeSearch() {
+				searchResults = [];
+				currentResultIndex = -1;
+				updateHighlights();
+				const searchDialog = document.getElementById('search-dialog');
+				if (searchDialog) {
+					searchDialog.classList.remove('active');
+				}
+				clearHighlights();
+			}
+
+			function findNextMatch() {
+				if (searchResults.length === 0) {
+					findText();
+					return;
+				}
+
+				const searchScopeBtn = document.querySelector('.scope-btn.active');
+				const searchScope = searchScopeBtn ? searchScopeBtn.dataset.scope : 'current';
+
+				if (currentResultIndex === -1) {
+					currentResultIndex = 0;
+				} else {
+					currentResultIndex = (currentResultIndex + 1) % searchResults.length;
+				}
+
+				let result = searchResults[currentResultIndex];
+
+				// 只在"整个文档"搜索时检查文档切换
+				if (searchScope === 'all' && activeTitleIndex !== -1 && documents.length > 1) {
+					let docStart = 0;
+					let docEnd = 0;
+
+					for (let i = 0; i < documents.length; i++) {
+						docEnd = docStart + documents[i].content.length;
+
+						if (result.start >= docStart && result.start < docEnd) {
+							if (i !== activeTitleIndex) {
+								alert(`匹配项位于标题 "${documents[i].title}" 中，请手动切换文档。`);
+								currentResultIndex = i;
+								updateHighlights();
+								return;
+							} else {
+								result.start -= docStart;
+								result.end -= docStart;
+							}
+							break;
+						}
+
+						docStart = docEnd + 1;
+					}
+				}
+
+				// 定位到匹配项
+				contentEditor.focus();
+				contentEditor.setSelectionRange(result.start, result.end);
+
+				// 平滑滚动
+				const scrollPos = Math.max(0, result.start / contentEditor.value.length * contentEditor.scrollHeight - 100);
+				contentEditor.scrollTo({
+					top: scrollPos,
+					behavior: 'smooth'
+				});
+				updateHighlights();
+
+				// 更新状态信息
+				const resultInfo = searchScope === 'current'
+					? `匹配项 ${currentResultIndex + 1} / ${searchResults.length}`
+					: `匹配项 ${currentResultIndex + 1} / ${searchResults.length} (文档: ${documents[activeTitleIndex].title})`;
+				updateSearchResultInfo(resultInfo);
+			}
+
+			// 查找上一个匹配项
+			function findPreviousMatch() {
+				if (searchResults.length === 0) {
+					findText();
+					return;
+				}
+
+				const searchScopeBtn = document.querySelector('.scope-btn.active');
+				const searchScope = searchScopeBtn ? searchScopeBtn.dataset.scope : 'current';
+
+				currentResultIndex = (currentResultIndex - 1 + searchResults.length) % searchResults.length;
+				let result = searchResults[currentResultIndex];
+
+				// 只在"整个文档"搜索时检查文档切换
+				if (searchScope === 'all' && activeTitleIndex !== -1 && documents.length > 1) {
+					let docStart = 0;
+					let docEnd = 0;
+
+					for (let i = 0; i < documents.length; i++) {
+						docEnd = docStart + documents[i].content.length;
+
+						if (result.start >= docStart && result.start < docEnd) {
+							if (i !== activeTitleIndex) {
+								alert(`匹配项位于标题 "${documents[i].title}" 中，请手动切换文档。`);
+								currentResultIndex = i;
+								updateHighlights();
+								return;
+							} else {
+								result.start -= docStart;
+								result.end -= docStart;
+							}
+							break;
+						}
+
+						docStart = docEnd + 1;
+					}
+				}
+
+				contentEditor.focus();
+				contentEditor.setSelectionRange(result.start, result.end);
+				// 平滑滚动并确保高亮可见
+				const scrollPos = Math.max(0, result.start / contentEditor.value.length * contentEditor.scrollHeight - 100);
+				contentEditor.scrollTo({
+					top: scrollPos,
+					behavior: 'smooth'
+				});
+				updateHighlights();
+
+				// 更新状态信息
+				const resultInfo = searchScope === 'current'
+					? `匹配项 ${currentResultIndex + 1} / ${searchResults.length}`
+					: `匹配项 ${currentResultIndex + 1} / ${searchResults.length} (文档: ${documents[activeTitleIndex].title})`;
+				updateSearchResultInfo(resultInfo);
+			}
+
+			// 替换当前匹配的文本
+			function replaceText() {
+				if (searchResults.length === 0 || currentResultIndex === -1) {
+					updateSearchResultInfo('没有选中的匹配项可替换');
+					return;
+				}
+
+				const replaceInput = document.getElementById('replace-input').value;
+				const result = searchResults[currentResultIndex];
+
+				// 替换文本
+				const content = contentEditor.value;
+				contentEditor.value =
+					content.substring(0, result.start) +
+					replaceInput +
+					content.substring(result.end);
+
+				// 标记为已修改
+				isModified = true;
+
+				// 更新搜索结果
+				const lengthDiff = replaceInput.length - result.text.length;
+
+				// 更新后续搜索结果的位置
+				for (let i = currentResultIndex + 1; i < searchResults.length; i++) {
+					searchResults[i].start += lengthDiff;
+					searchResults[i].end += lengthDiff;
+				}
+
+				// 移除当前结果
+				searchResults.splice(currentResultIndex, 1);
+
+				// 更新当前索引
+				if (searchResults.length === 0) {
+					currentResultIndex = -1;
+					updateSearchResultInfo('替换完成，未找到更多匹配项');
+				} else {
+					currentResultIndex = Math.min(currentResultIndex, searchResults.length - 1);
+					findNextMatch();
+				}
+
+				// 更新状态
+				updateStatus();
+
+				// 添加到历史记录
+				addToHistory(contentEditor.value);
+			}
+
+			// 替换所有匹配的文本
+			function replaceAllText() {
+				const searchInput = document.getElementById('search-input').value;
+				if (!searchInput) {
+					updateSearchResultInfo('请输入要查找的文本');
+					return;
+				}
+
+				const replaceInput = document.getElementById('replace-input').value;
+				const content = contentEditor.value;
+				const caseSensitive = document.getElementById('case-sensitive').checked;
+				const wholeWord = document.getElementById('whole-word').checked;
+
+				// 创建正则表达式
+				let flags = caseSensitive ? 'g' : 'gi';
+				let searchPattern = searchInput;
+
+				if (wholeWord) {
+					searchPattern = `\\b${searchPattern}\\b`;
+				}
+
+				try {
+					const regex = new RegExp(searchPattern, flags);
+
+					// 替换所有匹配项
+					const newContent = content.replace(regex, replaceInput);
+					const replacedCount = (content.match(regex) || []).length;
+
+					// 更新内容
+					contentEditor.value = newContent;
+
+					// 标记为已修改
+					isModified = true;
+
+					// 更新结果信息
+					updateSearchResultInfo(`已替换 ${replacedCount} 个匹配项`);
+
+					// 重置搜索结果
+					searchResults = [];
+					currentResultIndex = -1;
+
+					// 更新状态
+					updateStatus();
+
+					// 添加到历史记录
+					addToHistory(contentEditor.value);
+				} catch (error) {
+					updateSearchResultInfo(`替换错误: ${error.message}`);
+				}
+			}
+
+			// 关闭搜索对话框
+			function closeSearchDialog() {
+				const searchDialog = document.getElementById('search-dialog');
+				searchDialog.classList.remove('active');
+
+				// 重置搜索结果
+				searchResults = [];
+				currentResultIndex = -1;
+
+				// 清除高亮显示
+				clearHighlights();
+			}
+
+			// 渲染标题列表
+			function renderTitles() {
+				console.log('renderTitles called');
+				titleList.innerHTML = '';
+				documents.forEach((doc, index) => {
+					const titleElement = document.createElement('div');
+					titleElement.className = 'title-item';
+					if (index === activeTitleIndex) {
+						titleElement.classList.add('active');
+					}
+
+					// 直接设置标题文本，不创建编辑按钮
+					titleElement.textContent = doc.title;
+					titleElement.addEventListener('click', () => {
+						setActiveTitle(index);
+					});
+
+					titleList.appendChild(titleElement);
+				});
+			}
+
+			// 编辑标题
+			function editTitle(index) {
+				const newTitle = prompt('编辑标题:', documents[index].title);
+				if (newTitle && newTitle.trim() !== '') {
+					documents[index].title = newTitle.trim();
+					renderTitles();
+				}
+			}
+
+			// 设置活动标题
+			function setActiveTitle(index) {
+				if (index < 0 || index >= documents.length) {
+					console.error('无效的标题索引:', index);
+					return;
+				}
+
+				if (activeTitleIndex !== -1) {
+					// 保存当前内容
+					documents[activeTitleIndex].content = contentEditor.value;
+					isModified = true;
+				}
+
+				activeTitleIndex = index;
+				renderTitles();
+				contentEditor.value = documents[index].content;
+
+				// 重置历史记录
+				window.editorHistory.records = [contentEditor.value];
+				window.editorHistory.index = 0;
+
+				// 触发内容更新事件
+				const event = new Event('input');
+				contentEditor.dispatchEvent(event);
+
+				updateStatus();
+			}
+
+			// 添加新标题
+			function addTitle() {
+				const newTitle = prompt('请输入新标题:', '新标题');
+				if (newTitle) {
+					documents.push({
+						title: newTitle,
+						content: ''
+					});
+					activeTitleIndex = documents.length - 1;
+					renderTitles();
+					contentEditor.value = '';
+					updateStatus();
+				}
+			}
+
+			// 移除当前选中的标题
+			function removeTitle() {
+				if (activeTitleIndex === -1 || documents.length <= 1) return;
+
+				if (confirm(`确定要删除标题 "${documents[activeTitleIndex].title}" 吗？`)) {
+					documents.splice(activeTitleIndex, 1);
+					activeTitleIndex = activeTitleIndex >= documents.length ? documents.length - 1 : activeTitleIndex;
+					renderTitles();
+					contentEditor.value = activeTitleIndex >= 0 ? documents[activeTitleIndex].content : '';
+					updateStatus();
+				}
+			}
+
+			// 标题上移
+			function moveTitleUp() {
+				if (activeTitleIndex <= 0) return;
+
+				const temp = documents[activeTitleIndex - 1];
+				documents[activeTitleIndex - 1] = documents[activeTitleIndex];
+				documents[activeTitleIndex] = temp;
+				activeTitleIndex--;
+				renderTitles();
+			}
+
+			// 标题下移
+			function moveTitleDown() {
+				if (activeTitleIndex >= documents.length - 1) return;
+
+				const temp = documents[activeTitleIndex + 1];
+				documents[activeTitleIndex + 1] = documents[activeTitleIndex];
+				documents[activeTitleIndex] = temp;
+				activeTitleIndex++;
+				renderTitles();
+			}
+
+		});
+	</script>
+</body>
+
+</html>
