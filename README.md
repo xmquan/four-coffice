@@ -1,0 +1,1 @@
+It's still an incomplete little idea. I'll keep modifying it until it can work properly. This little idea is to use Microsoft WordPad in my life. I always feel that there is a missing function. It can't edit documents in segments, nor can it quickly locate. According to this requirement, I started working on this idea.
