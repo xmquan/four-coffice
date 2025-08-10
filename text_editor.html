@@ -693,6 +693,8 @@
 		window.activeTitleIndex = -1;
 		// 全局变量：标记文档是否被修改
 		window.isModified = false;
+		// 全局变量：搜索对话框事件是否已初始化
+		window.searchDialogEventsInitialized = false;
 		// 全局变量：编辑器历史记录系统
 		window.editorHistory = {
 			records: [""],
@@ -715,12 +717,102 @@
 			}
 		};
 
+		// 全局搜索相关变量
+		let searchResults = [];
+		let currentResultIndex = -1;
+
 		// 全局updateStatus函数
 		function updateStatus() {
 			// 确保依赖变量已初始化
 			if (typeof debouncedUpdateStatus !== 'undefined') {
 				debouncedUpdateStatus();
 			}
+		}
+
+		// 更新搜索结果信息
+		function updateSearchResultInfo(message) {
+			const resultInfo = document.getElementById('search-result-info');
+			if (resultInfo) {
+				resultInfo.textContent = message;
+			}
+		}
+
+		// 查找文本
+		function escapeRegExp(string) {
+			return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		}
+
+		// 关闭搜索对话框
+		function closeSearchDialog() {
+			const searchDialog = document.getElementById('search-dialog');
+			if (searchDialog) {
+				searchDialog.classList.remove('active');
+
+				// 重置搜索结果
+				searchResults = [];
+				currentResultIndex = -1;
+			}
+		}
+
+		// 添加到历史记录
+		function addToHistory(content) {
+			// 添加新状态到历史记录
+			window.editorHistory.add(content);
+
+			// 如果当前不是最新状态，删除当前之后的所有历史
+			if (window.editorHistory.index < window.editorHistory.records.length - 1) {
+				window.editorHistory.records = window.editorHistory.records.slice(0, window.editorHistory.index + 1);
+			}
+		}
+
+		// 设置活动标题
+		function setActiveTitle(index) {
+			if (index < 0 || index >= window.documents.length) {
+				console.error('无效的标题索引:', index);
+				return;
+			}
+
+			if (window.activeTitleIndex !== -1) {
+				// 保存当前内容
+				window.documents[window.activeTitleIndex].content = window.contentEditor.value;
+				window.isModified = true;
+			}
+
+			window.activeTitleIndex = index;
+			renderTitles();
+			window.contentEditor.value = window.documents[index].content;
+
+			// 重置历史记录
+			window.editorHistory.records = [window.contentEditor.value];
+			window.editorHistory.index = 0;
+
+			// 触发内容更新事件
+			const event = new Event('input');
+			window.contentEditor.dispatchEvent(event);
+
+			updateStatus();
+		}
+
+		// 渲染标题列表
+		function renderTitles() {
+			const titleList = document.getElementById('title-list');
+			console.log('renderTitles called');
+			titleList.innerHTML = '';
+			window.documents.forEach((doc, index) => {
+				const titleElement = document.createElement('div');
+				titleElement.className = 'title-item';
+				if (index === window.activeTitleIndex) {
+					titleElement.classList.add('active');
+				}
+
+				// 直接设置标题文本，不创建编辑按钮
+				titleElement.textContent = doc.title;
+				titleElement.addEventListener('click', () => {
+					setActiveTitle(index);
+				});
+
+				titleList.appendChild(titleElement);
+			});
 		}
 
 		// 当DOM完全加载后执行初始化
@@ -738,7 +830,7 @@
 			// document.getElementById('new-btn').addEventListener('click', newDocument);
 			document.getElementById('open-btn').addEventListener('click', () => fileInput.click());
 			document.getElementById('save-btn').addEventListener('click', saveDocument);
-			document.getElementById('close-btn').addEventListener('click', closeDocument);
+			// document.getElementById('close-btn').addEventListener('click', closeDocument);
 
 			// 标题栏按钮事件绑定
 			// document.getElementById('add-title-btn').addEventListener('click', addTitle);
@@ -845,11 +937,14 @@
 						// 新建文档的实际逻辑
 						const newTitle = prompt('请输入新标题:', '新标题');
 						if (newTitle) {
+							// 清空现有文档列表
+							documents.length = 0;
+							// 添加新文档
 							documents.push({
 								title: newTitle,
 								content: ''
 							});
-							activeTitleIndex = documents.length - 1;
+							activeTitleIndex = 0;
 							renderTitles();
 							contentEditor.value = '';
 							updateStatus();
@@ -858,19 +953,35 @@
 					});
 				}
 
+
+				// 创建默认新文档
 				document.getElementById('add-title-btn').addEventListener('click', newDocument);
 				document.getElementById('new-btn').addEventListener('click', newDocument);
-				// 创建默认新文档
-				newDocument();
-				isModified = false;
 
 				// 关闭当前文档
 				function closeDocument() {
-					checkAndSaveIfNeeded(function () {
-						newDocument();
+					if (documents.length > 0) {
+						// 检查当前文档是否有修改
+						if (isModified) {
+							// 如果有修改，提示用户是否保存
+							const userChoice = confirm('当前文档有修改，是否保存后再关闭？\n点击"确定"保存并关闭，点击"取消"直接关闭');
+							if (userChoice) {
+								saveDocument();
+							}
+						}
+						
+						// 执行关闭操作 - 清空整个文档
+						documents.length = 0;
+						activeTitleIndex = -1;
+						renderTitles();
+						contentEditor.value = '';
+						updateStatus();
 						isModified = false;
-					});
+					} else {
+						alert('没有可关闭的文档');
+					}
 				}
+				document.getElementById('close-btn').addEventListener('click', closeDocument);
 
 				// 初始化历史记录
 				if (contentEditor) {
@@ -954,29 +1065,16 @@
 					const url = URL.createObjectURL(blob);
 					const a = document.createElement('a');
 					a.href = url;
-					a.download = 'document.txt';
+					a.download = documents[activeTitleIndex].title + '.txt';
 					document.body.appendChild(a);
 					a.click();
 					document.body.removeChild(a);
 					URL.revokeObjectURL(url);
 
 					updateStatus();
-					alert('文档已保存');
+
 				} else {
 					alert('文档没有修改，无需保存');
-				}
-			}
-
-
-
-			// 添加到历史记录
-			function addToHistory(content) {
-				// 添加新状态到历史记录
-				window.editorHistory.add(content);
-
-				// 如果当前不是最新状态，删除当前之后的所有历史
-				if (window.editorHistory.index < window.editorHistory.records.length - 1) {
-					window.editorHistory.records = window.editorHistory.records.slice(0, window.editorHistory.index + 1);
 				}
 			}
 
@@ -1056,146 +1154,6 @@
 			// 显示/隐藏搜索对话框
 			// 搜索相关变量
 			let searchDialogEventsInitialized = false;
-			let searchResults = [];
-			let currentResultIndex = -1;
-
-			// 更新搜索结果信息
-			function updateSearchResultInfo(message) {
-				const resultInfo = document.getElementById('search-result-info');
-				resultInfo.textContent = message;
-			}
-
-			// 查找文本
-			function escapeRegExp(string) {
-				return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-			}
-
-			// 查找下一个匹配项
-			function loadDocument(index) {
-				if (index >= 0 && index < documents.length) {
-					// 保存当前文档内容
-					if (activeTitleIndex !== -1) {
-						documents[activeTitleIndex].content = contentEditor.value;
-					}
-
-					// 切换到新文档
-					activeTitleIndex = index;
-					contentEditor.value = documents[index].content;
-
-					// 重置查找状态
-					searchResults = [];
-					currentResultIndex = -1;
-
-					// 更新标题列表高亮
-					renderTitles();
-
-					// 重置历史记录
-					window.editorHistory.records = [contentEditor.value];
-					window.editorHistory.index = 0;
-
-					// 更新状态栏
-					updateStatus();
-				}
-			}
-			// 关闭搜索对话框
-			function closeSearch() {
-				searchResults = [];
-				currentResultIndex = -1;
-
-				const searchDialog = document.getElementById('search-dialog');
-				if (searchDialog) {
-					searchDialog.classList.remove('active');
-				}
-			}
-
-			// 关闭搜索对话框
-			function closeSearchDialog() {
-				const searchDialog = document.getElementById('search-dialog');
-				searchDialog.classList.remove('active');
-
-				// 重置搜索结果
-				searchResults = [];
-				currentResultIndex = -1;
-
-			}
-
-			// ================== 标题栏相关功能 ==================
-
-			// 渲染标题列表
-			function renderTitles() {
-				console.log('renderTitles called');
-				titleList.innerHTML = '';
-				documents.forEach((doc, index) => {
-					const titleElement = document.createElement('div');
-					titleElement.className = 'title-item';
-					if (index === activeTitleIndex) {
-						titleElement.classList.add('active');
-					}
-
-					// 直接设置标题文本，不创建编辑按钮
-					titleElement.textContent = doc.title;
-					titleElement.addEventListener('click', () => {
-						setActiveTitle(index);
-					});
-
-					titleList.appendChild(titleElement);
-				});
-			}
-
-			// 编辑标题
-			function editTitle(index) {
-				const newTitle = prompt('编辑标题:', documents[index].title);
-				if (newTitle && newTitle.trim() !== '') {
-					documents[index].title = newTitle.trim();
-					renderTitles();
-				}
-			}
-
-			// 设置活动标题
-			function setActiveTitle(index) {
-				if (index < 0 || index >= documents.length) {
-					console.error('无效的标题索引:', index);
-					return;
-				}
-
-				if (activeTitleIndex !== -1) {
-					// 保存当前内容
-					documents[activeTitleIndex].content = contentEditor.value;
-					isModified = true;
-				}
-
-				activeTitleIndex = index;
-				renderTitles();
-				contentEditor.value = documents[index].content;
-
-				// 重置历史记录
-				window.editorHistory.records = [contentEditor.value];
-				window.editorHistory.index = 0;
-
-				// 触发内容更新事件
-				const event = new Event('input');
-				contentEditor.dispatchEvent(event);
-
-				updateStatus();
-			}
-
-			// 添加新的标题
-			function addTitle() {
-				const newTitle = prompt('请输入新标题:', '新标题');
-				if (newTitle) {
-					documents.push({
-						title: newTitle,
-						content: ''
-					});
-					activeTitleIndex = documents.length - 1;
-					renderTitles();
-					contentEditor.value = '';
-					updateStatus();
-					isModified = false; // 新文档未修改
-				}
-			}
-
-
 
 			// 移除当前选中的标题
 			function removeTitle() {
@@ -1342,7 +1300,7 @@
 
 				if (searchScope === 'all') {
 					// 搜索整个文档
-					documents.forEach((doc, docIndex) => {
+					window.documents.forEach((doc, docIndex) => {
 						const docContent = doc.content;
 						let match;
 						while ((match = regex.exec(docContent)) !== null) {
@@ -1357,14 +1315,14 @@
 					});
 				} else {
 					// 只搜索当前视图
-					const docContent = contentEditor.value;
+					const docContent = window.contentEditor.value;
 					let match;
 					while ((match = regex.exec(docContent)) !== null) {
 						searchResults.push({
 							start: match.index,
 							end: match.index + match[0].length,
 							text: match[0],
-							docIndex: activeTitleIndex
+							docIndex: window.activeTitleIndex
 						});
 					}
 				}
@@ -1380,7 +1338,7 @@
 				updateSearchResultInfo(`搜索错误: ${error.message}`);
 			}
 
-			addToHistory(contentEditor.value);
+			addToHistory(window.contentEditor.value);
 		}
 
 		// 查找下一个匹配项
@@ -1402,21 +1360,22 @@
 			let result = searchResults[currentResultIndex];
 
 			// 只在"整个文档"搜索时检查文档切换
-			if (searchScope === 'all' && activeTitleIndex !== -1 && documents.length > 1) {
+			if (searchScope === 'all' && window.activeTitleIndex !== -1 && window.documents.length > 1) {
 				// 自动切换到匹配项所在标题
-				if (result.docIndex !== activeTitleIndex) {
+				if (result.docIndex !== window.activeTitleIndex) {
 					setActiveTitle(result.docIndex);
-					// setActiveTitle 会触发内容切换和渲染
+					// 需要重新获取结果，因为在setActiveTitle后searchResults可能已改变
+					result = searchResults[currentResultIndex];
 				}
 			}
 
 			// 定位到匹配项
-			contentEditor.focus();
-			contentEditor.setSelectionRange(result.start, result.end);
+			window.contentEditor.focus();
+			window.contentEditor.setSelectionRange(result.start, result.end);
 
 			// 平滑滚动
-			const scrollPos = Math.max(0, result.start / contentEditor.value.length * contentEditor.scrollHeight - 100);
-			contentEditor.scrollTo({
+			const scrollPos = Math.max(0, result.start / window.contentEditor.value.length * window.contentEditor.scrollHeight - 100);
+			window.contentEditor.scrollTo({
 				top: scrollPos,
 				behavior: 'smooth'
 			});
@@ -1424,7 +1383,7 @@
 			// 更新状态信息
 			const resultInfo = searchScope === 'current'
 				? `匹配项 ${currentResultIndex + 1} / ${searchResults.length}`
-				: `匹配项 ${currentResultIndex + 1} / ${searchResults.length} (文档: ${documents[activeTitleIndex].title})`;
+				: `匹配项 ${currentResultIndex + 1} / ${searchResults.length} (文档: ${window.documents[window.activeTitleIndex].title})`;
 
 			updateSearchResultInfo(resultInfo);
 		}
@@ -1443,18 +1402,20 @@
 			let result = searchResults[currentResultIndex];
 
 			// 只在"整个文档"搜索时检查文档切换
-			if (searchScope === 'all' && activeTitleIndex !== -1 && documents.length > 1) {
+			if (searchScope === 'all' && window.activeTitleIndex !== -1 && window.documents.length > 1) {
 				// 自动切换到匹配项所在标题
-				if (result.docIndex !== activeTitleIndex) {
+				if (result.docIndex !== window.activeTitleIndex) {
 					setActiveTitle(result.docIndex);
+					// 需要重新获取结果，因为在setActiveTitle后searchResults可能已改变
+					result = searchResults[currentResultIndex];
 				}
 			}
 
-			contentEditor.focus();
-			contentEditor.setSelectionRange(result.start, result.end);
+			window.contentEditor.focus();
+			window.contentEditor.setSelectionRange(result.start, result.end);
 			// 平滑滚动并确保高亮可见
-			const scrollPos = Math.max(0, result.start / contentEditor.value.length * contentEditor.scrollHeight - 100);
-			contentEditor.scrollTo({
+			const scrollPos = Math.max(0, result.start / window.contentEditor.value.length * window.contentEditor.scrollHeight - 100);
+			window.contentEditor.scrollTo({
 				top: scrollPos,
 				behavior: 'smooth'
 			});
@@ -1462,7 +1423,7 @@
 			// 更新状态信息
 			const resultInfo = searchScope === 'current'
 				? `匹配项 ${currentResultIndex + 1} / ${searchResults.length}`
-				: `匹配项 ${currentResultIndex + 1} / ${searchResults.length} (文档: ${documents[activeTitleIndex].title})`;
+				: `匹配项 ${currentResultIndex + 1} / ${searchResults.length} (文档: ${window.documents[window.activeTitleIndex].title})`;
 			updateSearchResultInfo(resultInfo);
 		}
 
@@ -1477,14 +1438,14 @@
 			const result = searchResults[currentResultIndex];
 
 			// 替换文本
-			const content = contentEditor.value;
-			contentEditor.value =
+			const content = window.contentEditor.value;
+			window.contentEditor.value =
 				content.substring(0, result.start) +
 				replaceInput +
 				content.substring(result.end);
 
 			// 标记为已修改
-			isModified = true;
+			window.isModified = true;
 
 			// 更新搜索结果
 			const lengthDiff = replaceInput.length - result.text.length;
@@ -1511,7 +1472,7 @@
 			updateStatus();
 
 			// 添加到历史记录
-			addToHistory(contentEditor.value);
+			addToHistory(window.contentEditor.value);
 		}
 
 		// 替换所有匹配项
@@ -1523,7 +1484,7 @@
 			}
 
 			const replaceInput = document.getElementById('replace-input').value;
-			const content = contentEditor.value;
+			const content = window.contentEditor.value;
 			const caseSensitive = document.getElementById('case-sensitive').checked;
 			const wholeWord = document.getElementById('whole-word').checked;
 
@@ -1533,6 +1494,9 @@
 
 			if (wholeWord) {
 				searchPattern = `\\b${searchPattern}\\b`;
+			} else {
+				// 修改:使用全局escapeRegExp函数
+				searchPattern = escapeRegExp(searchInput);
 			}
 
 			try {
@@ -1543,10 +1507,10 @@
 				const replacedCount = (content.match(regex) || []).length;
 
 				// 更新内容
-				contentEditor.value = newContent;
+				window.contentEditor.value = newContent;
 
 				// 标记为已修改
-				isModified = true;
+				window.isModified = true;
 
 				// 更新结果信息
 				updateSearchResultInfo(`已替换 ${replacedCount} 个匹配项`);
@@ -1559,7 +1523,7 @@
 				updateStatus();
 
 				// 添加到历史记录
-				addToHistory(contentEditor.value);
+				addToHistory(window.contentEditor.value);
 			} catch (error) {
 				updateSearchResultInfo(`替换错误: ${error.message}`);
 			}
@@ -1570,17 +1534,17 @@
 		// 防抖后更新状态栏统计信息
 		const debouncedUpdateStatus = debounce(function () {
 			// 安全访问依赖变量
-			if (typeof activeTitleIndex === 'undefined' || activeTitleIndex === -1) return;
-			if (!window.contentEditor || !window.statusInfo || !documents) return;
+			if (typeof window.activeTitleIndex === 'undefined' || window.activeTitleIndex === -1) return;
+			if (!window.contentEditor || !window.statusInfo || !window.documents) return;
 
-			const text = contentEditor.value;
+			const text = window.contentEditor.value;
 			const lines = text.split('\n').length;
 			// 当前页非空白字符数
 			const currentCount = text.replace(/\s/g, '').length;
 
 			// 计算总字数（所有文档内容去除空白后的总长度）
 			let totalCount = 0;
-			documents.forEach(doc => {
+			window.documents.forEach(doc => {
 				const docText = doc.content.replace(/\s/g, '');
 				totalCount += docText.length;
 			});
@@ -1665,7 +1629,7 @@
 
 		// 解析文档内容为标题和正文
 		function parseDocument(text) {
-			documents = [];
+			window.documents = [];
 			let currentPos = 0;
 
 			// 使用matchAll一次性找到所有标题
@@ -1673,11 +1637,11 @@
 
 			if (titleMatches.length === 0) {
 				// 如果没有标题，整个文档作为一个未命名标题
-				documents.push({
+				window.documents.push({
 					title: "未命名标题",
 					content: addTabToParagraphs(text.trim())
 				});
-				activeTitleIndex = 0;
+				window.activeTitleIndex = 0;
 				return;
 			}
 
@@ -1685,7 +1649,7 @@
 			if (titleMatches[0].index > 0) {
 				const initialContent = text.substring(0, titleMatches[0].index).trim();
 				if (initialContent) {
-					documents.push({
+					window.documents.push({
 						title: "未命名标题",
 						content: addTabToParagraphs(initialContent)
 					});
@@ -1708,13 +1672,13 @@
 				const content = text.substring(match.index + match[0].length, contentEnd).trim();
 
 				// 添加到文档列表
-				documents.push({
+				window.documents.push({
 					title: title.trim(),
 					content: addTabToParagraphs(content)
 				});
 			}
 
-			activeTitleIndex = 0;
+			window.activeTitleIndex = 0;
 		}
 
 		// 新增：为每个段落开头加TAB
