@@ -864,6 +864,14 @@
 				newDocument();
 				isModified = false;
 
+				// 关闭当前文档
+				function closeDocument() {
+					checkAndSaveIfNeeded(function () {
+						newDocument();
+						isModified = false;
+					});
+				}
+
 				// 初始化历史记录
 				if (contentEditor) {
 					window.editorHistory.records = [contentEditor.value];
@@ -959,18 +967,7 @@
 				}
 			}
 
-			// 关闭当前文档
-			function closeDocument() {
 
-				if (isModified) {
-					if (confirm('文档已修改，确定要关闭吗？所有未保存的更改将丢失。')) {
-						newDocument();
-						isModified = false;
-					}
-				} else {
-					newDocument();
-				}
-			}
 
 			// 添加到历史记录
 			function addToHistory(content) {
@@ -1197,6 +1194,8 @@
 					isModified = false; // 新文档未修改
 				}
 			}
+
+
 
 			// 移除当前选中的标题
 			function removeTitle() {
