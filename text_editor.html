@@ -8,560 +8,363 @@
 
 	<!-- CSS样式部分 -->
 	<style>
-		/* 全局变量 */
-		:root {
-			/* 颜色 */
-			--bg-color: #f5f5f5;
-			--toolbar-color: #e0e0e0;
-			--border-color: #bdbdbd;
-			--text-color: #333;
-			--highlight-color: #90caf9;
-
-			/* 间距 */
-			--base-padding: 8px;
-			--small-padding: 4px;
-
-			/* 阴影 */
-			--base-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-			--hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-			--active-shadow: 0 4px 8px rgba(144, 202, 249, 0.3);
-
-			/* 圆角 */
-			border-radius: var(--small-padding);
-			--base-transition: all 0.2s ease;
-		}
-
-		/* 基础样式 */
-		body {
-			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+		/* 全局样式 */
+		* {
 			margin: 0;
 			padding: 0;
-			background-color: var(--bg-color);
-			color: var(--text-color);
+			box-sizing: border-box;
+			font-family: "Microsoft YaHei", Arial, sans-serif;
+		}
+
+		body {
+			background-color: #e6e6e6;
+			color: #333;
 			height: 100vh;
 			display: flex;
 			flex-direction: column;
+			overflow: hidden;
+			/* 隐藏浏览器滚动条 */
 		}
 
-		/* 工具栏样式 - 顶部操作按钮区域 */
-		.toolbar {
-			background-color: var(--toolbar-color);
-			padding: var(--base-padding);
-			border-bottom: 1px solid var(--border-color);
+		/* 主容器 */
+		.container {
+			width: 100%;
+			margin: 20px auto;
 			display: flex;
 			flex-direction: column;
-			gap: var(--base-padding);
+			height: calc(100vh - 40px);
+			overflow: hidden;
+			/* 隐藏浏览器滚动条 */
 		}
 
-		/* 工具栏行 - 用于分组按钮 */
-		.toolbar-row {
+		/* 顶部工具栏 */
+		.top-toolbar {
+			background-color: #d9d9d9;
+			padding: 8px;
 			display: flex;
-			justify-content: space-between;
+			gap: 10px;
+			border-top-left-radius: 5px;
+			border-top-right-radius: 5px;
+			flex-wrap: wrap;
+			width: 100%;
 		}
 
-		/* 工具组 - 用于分组按钮 */
-		.tool-group {
-			display: flex;
-			gap: var(--base-padding);
+		/* 分隔线 */
+		.separator {
+			width: 1px;
+			background-color: #aaa;
+			margin: 0 5px;
 		}
 
-		/* 工具栏按钮样式 */
-		button {
-			padding: 6px 12px;
-			background-color: white;
-			border: 1px solid var(--border-color);
-			border-radius: var(--small-padding);
+		/* 按钮通用样式 */
+		.btn {
+			padding: 6px 16px;
+			min-width: 50px;
+			height: 32px;
+			background-color: #f0f0f0;
+			border: 1px solid #ccc;
+			border-radius: 6px;
 			cursor: pointer;
-			transition: all 0.2s ease;
-			min-width: 24px;
-			text-align: center;
-		}
-
-		/* 按钮悬停和点击效果 */
-		button:hover {
-			background-color: #eee;
-			box-shadow: var(--base-shadow);
-		}
-
-		/* 按钮点击效果 */
-		button:active {
-			transform: translateY(0);
-			box-shadow: none;
-		}
-
-		/* 格式化按钮特殊样式 */
-		#bold-btn,
-		#italic-btn,
-		#underline-btn,
-		#strike-btn {
-			font-weight: bold;
-			font-family: 'Times New Roman', serif;
-		}
-
-		/* 搜索按钮特殊样式 */
-		#search-btn {
-			background-color: white;
-			border: 1px solid var(--border-color);
-			border-radius: var(--small-padding);
-			padding: 6px 28px 6px 36px;
-			/* 左侧留出图标空间，右侧和下拉框一致 */
 			font-size: 14px;
-			height: 36px;
-			/* 与下拉框高度一致 */
-			min-width: 90px;
-			border-radius: var(--small-padding);
-			cursor: pointer;
-			position: relative;
-			margin-right: 8px;
-			appearance: none;
-			-webkit-appearance: none;
-			-moz-appearance: none;
+			letter-spacing: 2px;
+			transition: all 0.2s;
 			display: inline-flex;
 			align-items: center;
-			transition: var(--base-transition);
+			justify-content: center;
+			white-space: nowrap;
 		}
 
-		/* 搜索按钮图标*/
-		#search-btn::before {
-			content: "";
-			display: inline-block;
-			position: absolute;
-			left: 12px;
-			top: 50%;
-			transform: translateY(-50%);
-			width: 16px;
-			height: 16px;
-			background: url("data:image/svg+xml;utf8,<svg width='16' height='16' xmlns='http://www.w3.org/2000/svg'><circle cx='7' cy='7' r='5' stroke='%23bbb' stroke-width='2' fill='none'/><line x1='11' y1='11' x2='15' y2='15' stroke='%23bbb' stroke-width='2' stroke-linecap='round'/></svg>") no-repeat center/16px 16px;
-			/* 浅灰色放大镜SVG */
+		.btn:hover {
+			background-color: #e0e0e0;
 		}
 
-		/* 搜索按钮悬停效果*/
-		#search-btn:hover {
-			background-color: #e3f2fd;
-			border-color: #64b5f6;
-		}
-
-		/* 搜索按钮点击效果*/
-		#bold-btn {
-			font-weight: 900;
-		}
-
-		/* 粗体按钮样式*/
-		#italic-btn {
-			font-style: italic;
-		}
-
-		/* 斜体按钮样式*/
-		#underline-btn {
-			text-decoration: underline;
-		}
-
-		/* 下划线按钮样式*/
-		#strike-btn {
-			text-decoration: line-through;
-		}
-
-		/* 删除线按钮样式*/
-		#link-btn,
-		#image-btn,
-		#code-btn {
-			font-size: 14px;
-			padding: 6px var(--base-padding);
-		}
-
-		/* 链接、图片、代码按钮样式*/
-		.editor-container {
+		/* 主内容区域 */
+		.main-content {
 			display: flex;
 			flex: 1;
+			background-color: white;
 			overflow: hidden;
+			/* 隐藏浏览器滚动条 */
 		}
 
-		/* 主内容区样式 */
-		.title-panel,
-		.content-panel {
-			flex: 1;
+		/* 左侧标题编辑区 */
+		.title-editor {
+			width: 318px;
+			padding: 10px;
+			border-right: 1px solid #ddd;
+			overflow-y: auto;
 			display: flex;
 			flex-direction: column;
-			padding: var(--base-padding);
-			overflow: hidden;
 		}
 
-		/* 标题栏和内容栏样式 */
+		/* 标题按钮区域 */
 		.title-tools {
 			display: flex;
-			gap: 8px;
-			margin-bottom: 12px;
-			justify-content: flex-start;
-			flex-wrap: wrap;
+			gap: 6px;
+			margin-bottom: 10px;
+			padding: 4px 0;
+			flex-shrink: 0;
+			/* 防止工具栏被压缩 */
 		}
 
-		/* 标题工具栏样式 */
-		.title-panel .tool-group button {
-			min-width: 48px;
-			font-size: 14px;
-			padding: 6px 12px;
+		/* 标题列表容器 */
+		#title-list {
+			flex: 1;
+			overflow-y: auto;
+			padding: 0 10px 10px 10px;
+			/* 添加边框样式，与内容编辑区保持一致 */
+			border: 1px solid #ddd;
+			border-radius: 5px;
+			/* 自定义滚动条样式 */
+			scrollbar-width: thin;
+			scrollbar-color: #999 #f0f0f0;
 		}
 
-		/* 标题工具栏按钮样式 */
-		.title-panel {
-			border-right: 1px solid var(--border-color);
-			max-width: 340px;
-			/* 可适当放大 */
-			min-width: 220px;
+		/* 自定义滚动条样式 - Webkit浏览器 */
+		#title-list::-webkit-scrollbar {
+			width: 8px;
+		}
+
+		#title-list::-webkit-scrollbar-track {
+			background: #f0f0f0;
+			border-radius: 4px;
+		}
+
+		#title-list::-webkit-scrollbar-thumb {
+			background: #999;
+			border-radius: 4px;
+		}
+
+		#title-list::-webkit-scrollbar-thumb:hover {
+			background: #777;
+		}
+
+		/* 标题栏专用按钮样式 */
+		.title-btn {
+			padding: 4px 12px;
+			min-width: 45px;
+			height: 28px;
+			background-color: #f5f5f5;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 13px;
+			letter-spacing: 0px;
+			transition: all 0.2s;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			white-space: nowrap;
+		}
+
+		.title-btn:hover {
+			background-color: #eeeeee;
+		}
+
+		/* 右侧内容编辑区 */
+		.content-panel {
+			flex: 1;
+			padding: 10px;
+			overflow-y: auto;
 			display: flex;
 			flex-direction: column;
-			padding: var(--base-padding);
-			overflow: hidden;
-			background: #fafbfc;
+			/* 自定义滚动条样式 */
+			scrollbar-width: thin;
+			scrollbar-color: #999 #f0f0f0;
 		}
 
-		/* 标题栏样式 */
-		.panel-header {
-			font-weight: bold;
-			margin-bottom: var(--base-padding);
+		/* 自定义滚动条样式 - Webkit浏览器 */
+		.content-panel::-webkit-scrollbar {
+			width: 8px;
 		}
 
-		/* 内容面板样式 */
-		.content-panel .panel-header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-bottom: 8px;
-			font-weight: bold;
-			font-size: 16px;
+		.content-panel::-webkit-scrollbar-track {
+			background: #f0f0f0;
+			border-radius: 4px;
 		}
 
-		/* 内容面板头部样式 */
+		.content-panel::-webkit-scrollbar-thumb {
+			background: #999;
+			border-radius: 4px;
+		}
+
+		.content-panel::-webkit-scrollbar-thumb:hover {
+			background: #777;
+		}
+
+		/* 内容按钮区域 */
 		.content-tools {
 			display: flex;
 			gap: 8px;
+			margin-bottom: 10px;
 			align-items: center;
-			/* 保证和下拉框、按钮风格一致 */
 		}
 
-		/* 编辑器样式 */
+		/* 编辑区域样式 */
 		.editor {
 			flex: 1;
-			border: 1px solid var(--border-color);
-			background-color: white;
-			padding: var(--base-padding);
-			overflow-y: scroll;
 			outline: none;
-			scrollbar-width: thin;
-			scrollbar-color: #c1c1c1 #f1f1f1;
-		}
-
-		/* 滚动条样式 */
-		.editor::-webkit-scrollbar {
-			width: 36px;
-			height: 36px;
-			display: block;
-		}
-
-		/* 自定义滚动条样式 */
-		.editor::-webkit-scrollbar-thumb {
-			background-color: #c1c1c1;
-			border-radius: 18px;
-			border: 6px solid #f1f1f1;
-		}
-
-		/* 自定义滚动条样式 */
-		.editor::-webkit-scrollbar-track {
-			background: #f1f1f1;
-			border-radius: 18px;
-			box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
-		}
-
-		/* 自定义滚动条样式 */
-		.editor::-webkit-scrollbar-thumb:hover {
-			background-color: #a8a8a8;
-		}
-
-		/* 确保内容足够触发滚动条 */
-		#title-list {
-			min-height: 200px;
-			/* max-height: 60vh; */
-			/* 限制最大高度，超出时出现滚动条 */
+			border: 1px solid #ddd;
+			border-radius: 5px;
+			padding: 10px;
 			overflow-y: auto;
-			/* 超出时显示垂直滚动条 */
-			/* 可选：美化滚动条 */
-			scrollbar-width: thin;
-			scrollbar-color: #c1c1c1 #f1f1f1;
-		}
-
-		/* 标题列表样式 */
-		#title-list::-webkit-scrollbar {
-			width: 36px;
-			height: 36px;
-			display: block;
-		}
-
-		/* 标题列表滚动条样式 */
-		#title-list::-webkit-scrollbar-thumb {
-			background: #c1c1c1;
-			border-radius: 18px;
-			border: 6px solid #f1f1f1;
-		}
-
-		/* 标题列表滚动条样式 */
-		#title-list::-webkit-scrollbar-track {
-			background: #f1f1f1;
-			border-radius: 18px;
-			box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
-		}
-
-		/* 标题列表滚动条样式 */
-		#content-editor {
-			min-height: 300px;
-			/* 设置最小高度确保有足够空间显示滚动条 */
 			resize: none;
-			/* 禁止通过鼠标调整大小 */
-			font-family: "微软雅黑", "Microsoft YaHei", Arial, sans-serif;
+			font-family: "Microsoft YaHei", Arial, sans-serif;
 			font-size: 20px;
 			letter-spacing: 2px;
 			line-height: 1.5;
+			/* 自定义滚动条样式 */
+			scrollbar-width: thin;
+			scrollbar-color: #999 #f0f0f0;
 		}
 
-		/* 状态栏样式 */
+		/* 自定义滚动条样式 - Webkit浏览器 */
+		.editor::-webkit-scrollbar {
+			width: 8px;
+		}
+
+		.editor::-webkit-scrollbar-track {
+			background: #f0f0f0;
+			border-radius: 4px;
+		}
+
+		.editor::-webkit-scrollbar-thumb {
+			background: #999;
+			border-radius: 4px;
+		}
+
+		.editor::-webkit-scrollbar-thumb:hover {
+			background: #777;
+		}
+
+		/* 底部状态栏 */
 		.status-bar {
-			height: auto;
-			min-height: 24px;
+			background-color: #d9d9d9;
+			padding: 5px 10px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
 			font-size: 12px;
-			padding: var(--small-padding) var(--base-padding);
-			background-color: var(--toolbar-color);
-			border-top: 1px solid var(--border-color);
-			display: flex;
-			flex-wrap: wrap;
-			align-items: center;
-			overflow-x: auto;
-			white-space: nowrap;
+			border-bottom-left-radius: 5px;
+			border-bottom-right-radius: 5px;
 		}
 
-		/* 状态栏样式 */
-		.status-item {
-			margin-right: var(--base-padding);
-			display: inline-flex;
-			align-items: center;
-		}
-
-		/* 状态栏项样式 */
-		.status-saved {
-			margin-left: var(--base-padding);
-			color: #4CAF50;
-			transition: all 0.3s ease;
-			opacity: 1;
-		}
-
-		/* 状态栏已保存样式 */
+		/* 状态消息样式 */
 		.status-messages {
-			flex: 1;
 			display: flex;
-			flex-wrap: wrap;
-			margin-right: 10px;
-			overflow: hidden;
+			flex-direction: column;
+			gap: 5px;
 		}
 
-		/* 状态栏消息容器 */
 		.status-message {
-			background-color: rgba(144, 202, 249, 0.2);
-			border-radius: var(--small-padding);
-			padding: 2px 6px;
-			margin-right: 5px;
-			margin-bottom: 3px;
-			white-space: nowrap;
+			background-color: #333;
+			color: white;
+			padding: 4px 8px;
+			border-radius: 4px;
+			font-size: 12px;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 		}
 
-		/* 状态栏消息样式 */
-		.status-stats {
-			flex-shrink: 0;
+		*/
+
+		/* 弹窗遮罩层 */
+		.modal-overlay {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: rgba(0, 0, 0, 0.5);
+			z-index: 1000;
+			justify-content: center;
+			align-items: center;
+		}
+
+		/* 弹窗容器 */
+		.modal-container {
+			background-color: white;
+			border-radius: 5px;
+			box-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
+			width: 400px;
+			max-width: 90%;
+		}
+
+		/* 弹窗标题 */
+		.modal-header {
+			padding: 12px 15px;
+			background-color: #f7f7f7;
+			border-bottom: 1px solid #ddd;
+			border-top-left-radius: 4px;
+			border-top-right-radius: 4px;
+		}
+
+		.modal-title {
+			font-size: 16px;
+			font-weight: bold;
+		}
+
+		/* 弹窗内容 */
+		.modal-body {
+			padding: 15px;
+		}
+
+		/* 弹窗底部 */
+		.modal-footer {
+			padding: 12px 15px;
+			border-top: 1px solid #ddd;
 			text-align: right;
 		}
 
-		/* 响应式设计 */
-		@media (max-width: 768px) {
-			.status-bar {
-				font-size: 11px;
-			}
-
-			.status-item {
-				margin-right: var(--small-padding);
-			}
-		}
-
-		/* 标题项样式 */
-		.title-item {
-			padding: 12px;
-			margin-bottom: var(--base-padding);
-			cursor: pointer;
-			border-radius: var(--base-padding);
-			background-color: white;
-			box-shadow: 0 2px var(--small-padding) rgba(0, 0, 0, 0.1);
-			transition: all 0.2s ease;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-		}
-
-		/* 标题项样式 */
-		.title-item:hover {
-			background-color: #f5f5f5;
-			box-shadow: 0 var(--small-padding) var(--base-padding) rgba(0, 0, 0, 0.15);
-		}
-
-		/* 标题项悬停效果 */
-		.title-item.active {
-			background-color: var(--highlight-color);
-			box-shadow: 0 var(--small-padding) var(--base-padding) rgba(144, 202, 249, 0.3);
-			border-left: var(--small-padding) solid #1976d2;
-		}
-
-		/* 标题项激活状态样式 */
-		.title-item {
-
-			font-weight: 500;
-		}
-
-		/* 移除编辑按钮相关样式 */
-		input[type="file"] {
-			display: none;
-		}
-
-		/* 搜索和替换对话框样式 */
-		.search-dialog {
-			position: fixed;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			width: 400px;
-			max-height: 80vh;
-			background-color: var(--bg-color);
-			color: var(--text-color);
-			border: 1px solid var(--border-color);
-			border-radius: var(--base-padding);
-			box-shadow: 0 var(--small-padding) 12px rgba(0, 0, 0, 0.15);
-			padding: 20px;
-			z-index: 1000;
-			display: none;
-			overflow-y: auto;
-		}
-
-		/* 搜索对话框样式 */
-		.search-dialog .dialog-header {
-			padding: var(--base-padding) 16px;
-			margin: -20px -20px 10px -20px;
-			background: var(--toolbar-color);
-			border-radius: var(--base-padding) var(--base-padding) 0 0;
-			cursor: move;
-			-webkit-user-select: none;
-			/* 兼容 Safari */
-			user-select: none;
-		}
-
-		/* 搜索对话框头部样式 */
-		.search-dialog.active {
-			display: block;
-		}
-
-		/* 搜索对话框激活状态样式 */
-		.search-dialog .close-button {
-			position: absolute;
-			right: 12px;
-			top: 16px;
-			font-size: 20px;
-			color: #aaa;
-			cursor: pointer;
-			transform: scale(0.8) translateX(2px);
-			transition: 0.2s ease;
-		}
-
-		/* 关闭按钮样式 */
-		.search-dialog .search-header {
-			margin-top: 0;
-			margin-bottom: 12px;
-			font-size: 16px;
+		/* 关闭按钮 */
+		.close-btn {
+			float: right;
+			font-size: 21px;
 			font-weight: bold;
-			color: var(--text-color);
-			border-bottom: 1px solid var(--border-color);
-			padding-bottom: var(--base-padding);
-		}
-
-		/* 搜索对话框标题样式 */
-		.search-dialog .search-content {
-			padding: var(--base-padding) 0;
-		}
-
-		/* 搜索对话框内容样式 */
-		.search-dialog .form-group {
-			margin-bottom: 12px;
-		}
-
-		/* 搜索对话框表单组样式 */
-		.search-dialog label {
-			display: block;
-			margin-bottom: var(--small-padding);
-			font-size: 14px;
-		}
-
-		/* 搜索对话框标签样式 */
-		.search-dialog input[type="text"] {
-			width: 96%;
-			padding: 6px var(--base-padding);
-			border: 1px solid var(--border-color);
-			border-radius: var(--small-padding);
-			font-size: 14px;
-		}
-
-		/* 搜索对话框输入框样式 */
-		.search-dialog .options {
-			display: flex;
-			margin-bottom: 12px;
-		}
-
-		/* 搜索对话框选项容器样式 */
-		.search-dialog .option {
-			margin-right: 12px;
-			font-size: 14px;
-		}
-
-		/* 搜索对话框选项样式 */
-		.search-dialog .buttons {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 5px;
-			justify-content: space-between;
-		}
-
-		/* 搜索对话框按钮容器样式 */
-		.search-dialog .buttons button,
-		.search-dialog .scope-btn {
-			padding: var(--small-padding) var(--base-padding);
-			font-size: 12px;
-			border: 1px solid var(--border-color);
-			border-radius: var(--base-radius);
-			background-color: white;
+			line-height: 1;
+			color: #000;
+			text-shadow: 0 1px 0 #fff;
+			opacity: 0.2;
 			cursor: pointer;
-			transition: var(--base-transition);
+			background: transparent;
+			border: 0;
 		}
 
-		/* 搜索对话框按钮样式 */
-		.search-dialog .scope-btn.active {
-			background-color: var(--highlight-color);
-			border-color: var(--highlight-color);
+		.close-btn:hover {
+			opacity: 0.5;
+		}
+
+		/* 搜索表单 */
+		.search-form {
+			display: flex;
+			gap: 8px;
+		}
+
+		.search-input {
+			flex: 1;
+			padding: 8px;
+			border: 1px solid #ccc;
+			border-radius: 3px;
+		}
+
+		.search-btn {
+			padding: 8px 15px;
+			background-color: #4CAF50;
 			color: white;
+			border: none;
+			border-radius: 3px;
+			cursor: pointer;
 		}
 
-		/* 搜索对话框作用域按钮激活状态样式 */
-		.search-dialog .result-info {
-			font-size: 12px;
-			margin-top: var(--base-padding);
-			color: #666;
+		.search-btn:hover {
+			background-color: #45a049;
 		}
 
-		/* 搜索对话框结果信息样式 */
+		/* 下拉框样式 */
 		.dropdown {
 			padding: 6px 28px 6px 12px;
-			border: 1px solid var(--border-color);
-			border-radius: var(--small-padding);
+			border: 1px solid #ccc;
+			border-radius: 3px;
 			background: white url("data:image/svg+xml;utf8,<svg width='20' height='20' xmlns='http://www.w3.org/2000/svg'><polyline points='5,8 10,13 15,8' fill='none' stroke='%23bbb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 8px center/20px 20px;
 			font-size: 14px;
 			margin-right: 8px;
@@ -572,7 +375,188 @@
 			cursor: pointer;
 		}
 
-		/* 下拉框样式 */
+		/* 标题项样式 */
+		.title-item {
+			padding: 12px;
+			margin-bottom: 8px;
+			cursor: pointer;
+			border-radius: 4px;
+			background-color: white;
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			transition: all 0.2s ease;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			flex-shrink: 0;
+			/* 防止标题项被压缩 */
+		}
+
+		.title-item:hover {
+			background-color: #f5f5f5;
+			box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+		}
+
+		.title-item.active {
+			background-color: #90caf9;
+			box-shadow: 0 2px 6px rgba(144, 202, 249, 0.3);
+			border-left: 4px solid #1976d2;
+		}
+
+		.title-item {
+			font-weight: 500;
+		}
+
+		/* 搜索对话框样式 */
+		.search-dialog {
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 400px;
+			max-height: 80vh;
+			background-color: #e6e6e6;
+			color: #333;
+			border: 1px solid #ccc;
+			border-radius: 5px;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+			padding: 20px;
+			z-index: 1000;
+			display: none;
+			overflow-y: auto;
+			/* 自定义滚动条样式 */
+			scrollbar-width: thin;
+			scrollbar-color: #999 #e6e6e6;
+		}
+
+		/* 自定义滚动条样式 - Webkit浏览器 */
+		.search-dialog::-webkit-scrollbar {
+			width: 8px;
+		}
+
+		.search-dialog::-webkit-scrollbar-track {
+			background: #e6e6e6;
+			border-radius: 4px;
+		}
+
+		.search-dialog::-webkit-scrollbar-thumb {
+			background: #999;
+			border-radius: 4px;
+		}
+
+		.search-dialog::-webkit-scrollbar-thumb:hover {
+			background: #777;
+		}
+
+		.search-dialog.active {
+			display: block;
+		}
+
+		.search-dialog .dialog-header {
+			padding: 8px 16px;
+			margin: -20px -20px 10px -20px;
+			background: #d9d9d9;
+			border-radius: 5px 5px 0 0;
+			cursor: move;
+			-webkit-user-select: none;
+			user-select: none;
+			font-weight: bold;
+		}
+
+		.search-dialog .close-button {
+			position: absolute;
+			right: 12px;
+			top: 16px;
+			font-size: 20px;
+			color: #666;
+			cursor: pointer;
+			transform: scale(0.8) translateX(2px);
+			transition: 0.2s ease;
+		}
+
+		.search-dialog .search-header {
+			margin-top: 0;
+			margin-bottom: 12px;
+			font-size: 16px;
+			font-weight: bold;
+			color: #333;
+			border-bottom: 1px solid #ccc;
+			padding-bottom: 8px;
+		}
+
+		.search-dialog .search-content {
+			padding: 8px 0;
+		}
+
+		.search-dialog .form-group {
+			margin-bottom: 12px;
+		}
+
+		.search-dialog label {
+			display: block;
+			margin-bottom: 4px;
+			font-size: 14px;
+		}
+
+		.search-dialog input[type="text"] {
+			width: 96%;
+			padding: 6px 12px;
+			border: 1px solid #ccc;
+			border-radius: 3px;
+			font-size: 14px;
+		}
+
+		.search-dialog .options {
+			display: flex;
+			margin-bottom: 12px;
+			flex-wrap: wrap;
+		}
+
+		.search-dialog .option {
+			margin-right: 12px;
+			font-size: 14px;
+			display: flex;
+			align-items: center;
+		}
+
+		.search-dialog .option input[type="checkbox"] {
+			margin-right: 4px;
+		}
+
+		.search-dialog .buttons {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 5px;
+			justify-content: space-between;
+		}
+
+		.search-dialog .buttons button,
+		.search-dialog .scope-btn {
+			padding: 4px 12px;
+			font-size: 12px;
+			border: 1px solid #ccc;
+			border-radius: 3px;
+			background-color: #f0f0f0;
+			cursor: pointer;
+			transition: all 0.2s ease;
+		}
+
+		.search-dialog .buttons button:hover,
+		.search-dialog .scope-btn:hover {
+			background-color: #e0e0e0;
+		}
+
+		.search-dialog .scope-btn.active {
+			background-color: #90caf9;
+			border-color: #90caf9;
+			color: white;
+		}
+
+		.search-dialog .result-info {
+			font-size: 12px;
+			margin-top: 8px;
+			color: #666;
+		}
+
 		input[type="file"] {
 			display: none;
 		}
@@ -580,39 +564,36 @@
 </head>
 
 <body>
-	<!-- 顶部工具栏 -->
-	<div class="toolbar">
-		<div class="toolbar-row">
-			<!-- 工具栏元素-->
-			<div class="tool-group">
-				<button id="new-btn">新建</button>
-				<button id="open-btn">打开</button>
-
-				<button id="save-btn">保存</button>
-				<button id="close-btn">关闭</button>
-			</div>
+	<div class="container">
+		<!-- 顶部工具栏 -->
+		<div class="top-toolbar">
+			<button id="new-btn" class="btn">新建</button>
+			<button id="open-btn" class="btn">打开</button>
+			<button id="save-btn" class="btn">保存</button>
+			<button id="close-btn" class="btn">关闭</button>
+			<div class="separator"></div>
+			<button id="undo-btn" class="btn">撤销</button>
+			<button id="redo-btn" class="btn">重做</button>
 			<input type="file" id="file-input" accept=".txt" aria-label="打开文本文件">
 		</div>
-	</div>
 
-	<!-- 主内容区 -->
-	<div class="editor-container">
-		<!-- 标题栏 -->
-		<div class="title-panel">
-			<!-- 标题栏头部 -->
-			<div class="tool-group title-tools">
-				<button id="add-title-btn">增加</button>
-				<button id="remove-title-btn">移除</button>
-				<button id="edit-title-btn">编辑</button>
-				<button id="move-up-btn">上移</button>
-				<button id="move-down-btn">下移</button>
+		<!-- 主内容区域 -->
+		<div class="main-content">
+			<!-- 左侧标题编辑区 -->
+			<div class="title-editor">
+				<!-- 标题按钮区域 -->
+				<div class="title-tools">
+					<button id="add-title-btn" class="title-btn">增加</button>
+					<button id="remove-title-btn" class="title-btn">移除</button>
+					<button id="edit-title-btn" class="title-btn">编辑</button>
+					<button id="move-up-btn" class="title-btn">上移</button>
+					<button id="move-down-btn" class="title-btn">下移</button>
+				</div>
+				<div id="title-list"></div>
 			</div>
-			<div id="title-list"></div>
-		</div>
-		<!-- 内容栏 -->
-		<div class="content-panel">
-			<!-- 内容栏头部 -->
-			<div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+
+			<!-- 右侧内容编辑区 -->
+			<div class="content-panel">
 				<div class="content-tools">
 					<select id="font-size-select" class="dropdown" aria-label="字号选择">
 						<option value="20px">字号：20px</option>
@@ -632,14 +613,14 @@
 						<option value="2px">字距：2px</option>
 						<option value="4px">字距：4px</option>
 					</select>
-					<button id="search-btn">搜索</button>
+					<button id="search-btn" class="btn">搜索</button>
 				</div>
-			</div>
-			<textarea id="content-editor" class="editor" placeholder="请输入内容"></textarea>
-			<!-- 状态栏 -->
-			<div class="status-bar">
-				<div class="status-messages" id="status-messages"></div>
-				<div class="status-stats" id="status-info">行: 0 | 字数: 0 | 总字数: 0</div>
+				<textarea id="content-editor" class="editor" placeholder="请输入内容"></textarea>
+				<!-- 底部状态栏 -->
+				<div class="status-bar">
+					<div id="status-messages" class="status-messages"></div>
+					<div class="status-stats" id="status-info">行: 0 | 字数: 0 | 总字数: 0</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -667,7 +648,7 @@
 					<label for="whole-word">全字匹配</label>
 				</div>
 				<div class="option">
-					<button id="search-current" class="scope-btn " data-scope="current">当前视图</button>
+					<button id="search-current" class="scope-btn" data-scope="current">当前视图</button>
 				</div>
 				<div class="option">
 					<button id="search-all" class="scope-btn active" data-scope="all">整个文档</button>
@@ -796,7 +777,7 @@
 		// 渲染标题列表
 		function renderTitles() {
 			const titleList = document.getElementById('title-list');
-			console.log('renderTitles called');
+			// console.log('renderTitles called');
 			titleList.innerHTML = '';
 			window.documents.forEach((doc, index) => {
 				const titleElement = document.createElement('div');
@@ -827,20 +808,21 @@
 			initEditor();
 
 			// 顶部工具栏按钮事件绑定
-			// document.getElementById('new-btn').addEventListener('click', newDocument);
+			document.getElementById('new-btn').addEventListener('click', newDocument);
 			document.getElementById('open-btn').addEventListener('click', () => fileInput.click());
 			document.getElementById('save-btn').addEventListener('click', saveDocument);
-			// document.getElementById('close-btn').addEventListener('click', closeDocument);
+			document.getElementById('close-btn').addEventListener('click', closeDocument);
+			document.getElementById('undo-btn').addEventListener('click', undo);
+			document.getElementById('redo-btn').addEventListener('click', redo);
 
 			// 标题栏按钮事件绑定
-			// document.getElementById('add-title-btn').addEventListener('click', addTitle);
+			document.getElementById('add-title-btn').addEventListener('click', newDocument);
 			document.getElementById('remove-title-btn').addEventListener('click', removeTitle);
 			document.getElementById('move-up-btn').addEventListener('click', moveTitleUp);
 			document.getElementById('move-down-btn').addEventListener('click', moveTitleDown);
 
 			// 添加字体样式按钮事件
 			document.getElementById('search-btn').addEventListener('click', toggleSearchDialog);
-
 
 			// ================== 内容栏相关功能 ==================
 
@@ -920,69 +902,6 @@
 					}
 				}, 30000);
 
-				// 检查当前文档是否有修改，必要时弹窗提示
-				function checkAndSaveIfNeeded(callback) {
-					if (window.isModified) {
-						if (confirm('当前文档有修改，是否保存？')) {
-							saveDocument();
-						}
-					}
-					// 无论是否保存，都继续后续操作
-					if (typeof callback === 'function') callback();
-				}
-
-				// 新建文档
-				function newDocument() {
-					checkAndSaveIfNeeded(function () {
-						// 新建文档的实际逻辑
-						const newTitle = prompt('请输入新标题:', '新标题');
-						if (newTitle) {
-							// 清空现有文档列表
-							documents.length = 0;
-							// 添加新文档
-							documents.push({
-								title: newTitle,
-								content: ''
-							});
-							activeTitleIndex = 0;
-							renderTitles();
-							contentEditor.value = '';
-							updateStatus();
-							isModified = false; // 新文档未修改
-						}
-					});
-				}
-
-
-				// 创建默认新文档
-				document.getElementById('add-title-btn').addEventListener('click', newDocument);
-				document.getElementById('new-btn').addEventListener('click', newDocument);
-
-				// 关闭当前文档
-				function closeDocument() {
-					if (documents.length > 0) {
-						// 检查当前文档是否有修改
-						if (isModified) {
-							// 如果有修改，提示用户是否保存
-							const userChoice = confirm('当前文档有修改，是否保存后再关闭？\n点击"确定"保存并关闭，点击"取消"直接关闭');
-							if (userChoice) {
-								saveDocument();
-							}
-						}
-						
-						// 执行关闭操作 - 清空整个文档
-						documents.length = 0;
-						activeTitleIndex = -1;
-						renderTitles();
-						contentEditor.value = '';
-						updateStatus();
-						isModified = false;
-					} else {
-						alert('没有可关闭的文档');
-					}
-				}
-				document.getElementById('close-btn').addEventListener('click', closeDocument);
-
 				// 初始化历史记录
 				if (contentEditor) {
 					window.editorHistory.records = [contentEditor.value];
@@ -991,38 +910,42 @@
 
 			// 处理文件打开操作
 			function handleFileOpen(event) {
-				console.log('文件选择事件触发');
+				// console.log('文件选择事件触发');
 				try {
 					const file = event.target.files[0];
 					if (!file) {
-						console.log('未选择文件');
+						// console.log('未选择文件');
 						return;
 					}
 
-					console.log('开始读取文件:', file.name);
+					// console.log('开始读取文件:', file.name);
 					const reader = new FileReader();
 
 					reader.onload = function (e) {
-						console.log('文件读取成功');
+						// console.log('文件读取成功');
 						try {
 							const text = e.target.result;
-							console.log('解析文档内容');
+							// console.log('解析文档内容');
 							parseDocument(text);
 
-							console.log('更新界面');
+							// console.log('更新界面');
 							// 确保渲染前内容已更新
 							if (documents.length > 0 && activeTitleIndex >= 0) {
 								renderTitles();
 								contentEditor.value = documents[activeTitleIndex].content;
 								updateStatus();
-								console.log('界面更新完成');
+								// console.log('界面更新完成');
 
 								// 重置历史记录
 								window.editorHistory.records = [contentEditor.value];
 								window.editorHistory.index = 0;
 
 								// 显示成功提示
-								addStatusMessage(`文件 "${file.name}" 加载成功`);
+								const statusMessages = document.getElementById('status-messages');
+								statusMessages.textContent = `文件 "${file.name}" 加载成功`;
+								setTimeout(() => {
+									statusMessages.textContent = '';
+								}, 3000);
 							} else {
 								console.error('文档解析失败，未生成有效内容');
 								alert('文档解析失败，请检查文件格式');
@@ -1098,6 +1021,49 @@
 				}
 			}
 
+			// 新建文档
+			function newDocument() {
+				const newTitle = prompt('请输入新标题:', '新标题');
+				if (newTitle) {
+					// 清空现有文档列表
+					documents.length = 0;
+					// 添加新文档
+					documents.push({
+						title: newTitle,
+						content: ''
+					});
+					activeTitleIndex = 0;
+					renderTitles();
+					contentEditor.value = '';
+					updateStatus();
+					isModified = false; // 新文档未修改
+				}
+			}
+
+			// 关闭当前文档
+			function closeDocument() {
+				if (documents.length > 0) {
+					// 检查当前文档是否有修改
+					if (isModified) {
+						// 如果有修改，提示用户是否保存
+						const userChoice = confirm('当前文档有修改，是否保存后再关闭？\n点击"确定"保存并关闭，点击"取消"直接关闭');
+						if (userChoice) {
+							saveDocument();
+						}
+					}
+
+					// 执行关闭操作 - 清空整个文档
+					documents.length = 0;
+					activeTitleIndex = -1;
+					renderTitles();
+					contentEditor.value = '';
+					updateStatus();
+					isModified = false;
+				} else {
+					alert('没有可关闭的文档');
+				}
+			}
+
 			// 添加键盘快捷键支持
 			contentEditor.addEventListener('keydown', function (e) {
 				// 撤销: Ctrl+Z
@@ -1150,10 +1116,6 @@
 					findPreviousMatch();
 				}
 			});
-
-			// 显示/隐藏搜索对话框
-			// 搜索相关变量
-			let searchDialogEventsInitialized = false;
 
 			// 移除当前选中的标题
 			function removeTitle() {
